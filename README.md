@@ -24,7 +24,7 @@
 
 1. `config.example.js` 를 복사해 `config.js` 로 이름을 바꾼다. (이미 있으면 그대로)
 2. `index.html` 을 크롬으로 연다.
-3. 탭을 2~3개 열어 하나는 **교사(전자칠판)** → 비밀번호 `1` → 새 수업, 나머지는 **학생으로 참가**로 들어가면 같은 브라우저 안에서 실시간으로 움직인다.
+3. 탭을 2~3개 열어 하나는 **교사(전자칠판)** → 비밀번호 `0906` → 새 수업, 나머지는 **학생으로 참가**로 들어가면 같은 브라우저 안에서 실시간으로 움직인다.
    (테스트 모드는 같은 브라우저의 탭끼리만 공유된다. 다른 기기는 2단계 뒤에 가능)
 
 ## 2. Supabase 연결 (다른 기기에서 함께 하려면 필수)
@@ -36,7 +36,7 @@
 
 ```js
 window.CONFIG = {
-  TEACHER_PASSWORD: "1",
+  TEACHER_PASSWORD: "0906",
   SUPABASE_URL: "https://xxxx.supabase.co",
   SUPABASE_ANON_KEY: "eyJ...",
   SUPABASE_TABLE: "docs",

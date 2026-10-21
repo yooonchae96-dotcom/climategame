@@ -4,8 +4,8 @@
 // config.js 는 .gitignore 에 들어 있어 깃허브에 올라가지 않습니다.
 // ============================================================
 window.CONFIG = {
-  // 교사 화면 비밀번호 (초기값 1)
-  TEACHER_PASSWORD: "1",
+  // 교사 화면 비밀번호 (초기값 0906)
+  TEACHER_PASSWORD: "0906",
 
   // Supabase 연결 정보. 비워 두면 같은 브라우저의 탭끼리만 공유되는 테스트 모드로 돌아갑니다.
   // Supabase 프로젝트 → Project Settings → API 에서 복사

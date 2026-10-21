@@ -259,7 +259,7 @@
   $("btn-teacher-back").onclick = () => show("screen-start");
   $("input-password").addEventListener("keydown", e => { if (e.key === "Enter") $("btn-password-ok").click(); });
   $("btn-password-ok").onclick = () => {
-    if ($("input-password").value !== String(CFG.TEACHER_PASSWORD ?? "1")) { $("password-error").textContent = "비밀번호가 틀렸습니다."; return; }
+    if ($("input-password").value !== String(CFG.TEACHER_PASSWORD ?? "0906")) { $("password-error").textContent = "비밀번호가 틀렸습니다."; return; }
     show("screen-teacher-home");
   };
   $("btn-th-back").onclick = () => show("screen-start");
