@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>기후 불평등 게임</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <button class="sound-btn" id="btn-sound" title="소리 켜기/끄기">🔊</button>
+
+    <!-- ===== 역할 선택 ===== -->
+    <section id="screen-start" class="screen active">
+      <div class="start-box">
+        <div class="start-badge">도덕 수업용 게임</div>
+        <h1 class="start-title">기후 불평등 게임</h1>
+        <p class="start-sub">같은 기후 재난이 반 전체를 덮칩니다.<br>태어날 때 받은 조건에 따라 누가 더 많이 잃을까요?</p>
+        <div class="start-actions">
+          <button class="btn btn-big" id="btn-role-student">학생으로 참가</button>
+          <button class="btn" id="btn-role-teacher">교사 (전자칠판)</button>
+        </div>
+        <p class="hint" id="store-mode"></p>
+      </div>
+    </section>
+
+    <!-- ===== 학생: 참가 ===== -->
+    <section id="screen-join" class="screen">
+      <div class="center-card">
+        <h2>수업에 참가하기</h2>
+        <label class="field"><span>수업 코드</span><input id="input-code" type="text" inputmode="numeric" maxlength="4" placeholder="선생님 화면의 4자리 숫자"></label>
+        <label class="field"><span>닉네임 (실명 금지, 2~10글자)</span><input id="input-nickname" type="text" maxlength="10" placeholder="예: 바람개비"></label>
+        <p class="error" id="join-error"></p>
+        <div class="screen-foot">
+          <button class="btn btn-ghost" id="btn-join-back">뒤로</button>
+          <button class="btn btn-big" id="btn-join">참가</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 학생: 메인 (상단 내 상황 + 단계별 내용) ===== -->
+    <section id="screen-student" class="screen">
+      <header class="s-header">
+        <div class="mini-char" id="s-mini"></div>
+        <div class="s-round" id="s-round"></div>
+        <button class="btn btn-sm btn-ghost" id="btn-my-status">내 상황</button>
+      </header>
+      <div class="s-body">
+        <!-- 캐릭터 카드 / 대기 -->
+        <div class="step" id="s-step-wait">
+          <div class="char-layout">
+            <div class="char-portrait" id="char-portrait"></div>
+            <div class="char-info">
+              <div class="char-name-row"><span id="char-name" class="char-name"></span><span id="char-age" class="char-age"></span></div>
+              <p id="char-place" class="char-place"></p>
+              <ul id="char-traits" class="char-traits"></ul>
+              <p id="char-strength" class="char-strength"></p>
+              <div class="stats" id="char-stats"></div>
+              <div class="wait-note" id="wait-note">선생님이 라운드를 시작하면 재난이 나타납니다.</div>
+            </div>
+          </div>
+        </div>
+        <!-- 선택 -->
+        <div class="step" id="s-step-choose">
+          <div class="disaster-strip" id="s-disaster"></div>
+          <div class="situation-box"><div class="label">내 처지</div><p id="situation-text"></p></div>
+          <div class="label">어떻게 할까?</div>
+          <div class="options" id="options"></div>
+          <div class="submitted-box hidden" id="submitted-box">✅ 제출했어요. 선생님이 결과를 공개할 때까지 기다려 주세요.</div>
+        </div>
+        <!-- 결과 -->
+        <div class="step" id="s-step-reveal">
+          <div class="result-box">
+            <div class="label">이번 라운드 결과</div>
+            <p class="result-choice" id="result-choice"></p>
+            <div class="deltas" id="result-deltas"></div>
+            <p class="result-why" id="result-why"></p>
+            <div class="class-pos" id="class-pos"></div>
+          </div>
+          <div class="ineq-row ineq-small" id="s-ineq"></div>
+        </div>
+        <!-- 최종 -->
+        <div class="step" id="s-step-final">
+          <div class="final-layout">
+            <div class="my-final" id="my-final"></div>
+            <div class="debrief-right" id="reflection-box">
+              <div class="label">생각 정리와 소감</div>
+              <div class="debrief-q" id="debrief-q"></div>
+              <textarea id="debrief-a" placeholder="답을 적어 주세요"></textarea>
+              <div class="debrief-nav"><span id="debrief-count"></span><button class="btn btn-sm" id="btn-debrief-next">다음 질문</button></div>
+              <textarea id="reflection-text" placeholder="소감: 이 게임을 하고 '기후 불평등'에 대해 새로 알게 된 것이나 느낀 점 (50자 이상)"></textarea>
+              <div class="reflection-foot"><span id="reflection-len">0자</span><button class="btn btn-big" id="btn-submit">소감 제출</button></div>
+              <p class="error" id="reflection-error"></p>
+            </div>
+          </div>
+        </div>
+        <!-- 제출 완료 -->
+        <div class="step" id="s-step-done">
+          <div class="center-card"><div class="done-emoji">🌏</div><h2>제출 완료!</h2><p id="done-text"></p></div>
+        </div>
+      </div>
+      <!-- 내 상황 패널 -->
+      <div class="status-panel hidden" id="status-panel">
+        <div class="status-head"><b>내 상황</b><button class="btn btn-sm btn-ghost" id="btn-status-close">닫기</button></div>
+        <div class="stats" id="status-stats"></div>
+        <div class="history" id="status-history"></div>
+      </div>
+    </section>
+
+    <!-- ===== 교사: 로그인 ===== -->
+    <section id="screen-teacher-login" class="screen">
+      <div class="center-card">
+        <h2>교사 화면</h2>
+        <input id="input-password" type="password" placeholder="비밀번호">
+        <p class="error" id="password-error"></p>
+        <div class="screen-foot">
+          <button class="btn btn-ghost" id="btn-teacher-back">뒤로</button>
+          <button class="btn" id="btn-password-ok">열기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 교사: 수업 만들기/열기 ===== -->
+    <section id="screen-teacher-home" class="screen">
+      <div class="center-card">
+        <h2>수업 준비</h2>
+        <button class="btn btn-big" id="btn-new-session">새 수업 만들기</button>
+        <p class="hint">20개 재난 중 10개가 무작위로 뽑혀 이번 수업의 10라운드가 됩니다.</p>
+        <label class="field"><span>진행 중인 수업 코드로 열기</span><input id="input-open-code" type="text" inputmode="numeric" maxlength="4" placeholder="4자리"></label>
+        <p class="error" id="open-error"></p>
+        <div class="screen-foot">
+          <button class="btn btn-ghost" id="btn-th-back">뒤로</button>
+          <button class="btn btn-ghost" id="btn-reflections-home">소감 목록</button>
+          <button class="btn" id="btn-open-session">열기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 교사: 진행 보드 ===== -->
+    <section id="screen-board" class="screen">
+      <header class="b-header">
+        <div class="b-code">수업 코드 <b id="b-code"></b></div>
+        <div class="b-phase" id="b-phase"></div>
+        <div class="b-count" id="b-count"></div>
+        <div class="b-tools">
+          <button class="btn btn-sm btn-ghost" id="btn-b-reflections">소감</button>
+          <button class="btn btn-sm btn-ghost" id="btn-b-exit">나가기</button>
+        </div>
+      </header>
+      <div class="b-body">
+        <!-- 대기실 -->
+        <div class="step" id="b-step-lobby">
+          <div class="lobby-layout">
+            <div class="lobby-left">
+              <div class="big-code" id="big-code"></div>
+              <p class="hint">학생은 '학생으로 참가' → 이 코드와 닉네임을 입력합니다. 캐릭터는 자동으로 배정됩니다.</p>
+              <div class="screen-foot">
+                <button class="btn btn-ghost" id="btn-add-bots">가상 학생으로 32명 채우기</button>
+                <button class="btn btn-big" id="btn-start-round">1라운드 시작</button>
+              </div>
+            </div>
+            <div class="player-grid" id="lobby-players"></div>
+          </div>
+        </div>
+        <!-- 선택 중 -->
+        <div class="step" id="b-step-choosing">
+          <div class="choosing-layout">
+            <div class="disaster-big">
+              <div class="disaster-img" id="b-disaster-img"></div>
+              <div class="disaster-text">
+                <div class="disaster-where" id="b-disaster-where"></div>
+                <h2 id="b-disaster-title"></h2>
+                <p id="b-disaster-story"></p>
+                <div class="b-options" id="b-options"></div>
+              </div>
+            </div>
+            <div class="submit-status">
+              <div class="label">제출 현황</div>
+              <div class="big-count" id="submit-count"></div>
+              <div class="submit-list" id="submit-list"></div>
+              <button class="btn btn-big" id="btn-reveal">결과 공개</button>
+              <p class="hint">제출하지 않은 학생은 첫 번째 가능한 선택지로 처리됩니다.</p>
+            </div>
+          </div>
+        </div>
+        <!-- 결과 공개 -->
+        <div class="step" id="b-step-reveal">
+          <div class="reveal-top">
+            <div class="reveal-title" id="reveal-title"></div>
+            <div class="reveal-sort">
+              <button class="chip active" data-sort="loss">많이 잃은 순</button>
+              <button class="chip" data-sort="char">캐릭터별</button>
+              <button class="chip" data-sort="score">누적 점수순</button>
+            </div>
+            <button class="btn btn-big" id="btn-next-round">다음 라운드</button>
+          </div>
+          <div class="ineq-row ineq-board" id="b-ineq"></div>
+          <div class="board-grid" id="board-grid"></div>
+        </div>
+        <!-- 최종 -->
+        <div class="step" id="b-step-final">
+          <div class="rank-layout">
+            <div class="rank-left">
+              <h2>최종 순위</h2>
+              <div class="group-avg" id="group-avg"></div>
+              <div class="screen-foot"><button class="btn btn-ghost" id="btn-final-sort-char">캐릭터별 평균 보기</button></div>
+            </div>
+            <div class="rank-list" id="rank-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 교사: 소감 목록 ===== -->
+    <section id="screen-reflections" class="screen">
+      <div class="teacher-panel">
+        <div class="teacher-bar">
+          <h2>학생 소감 <span id="teacher-count" class="count"></span></h2>
+          <div class="teacher-tools">
+            <select id="sort-select">
+              <option value="nick-desc">닉네임 내림차순</option>
+              <option value="nick-asc">닉네임 오름차순</option>
+              <option value="time-desc">최근 제출순</option>
+              <option value="score-desc">점수 높은순</option>
+            </select>
+            <button class="btn btn-sm" id="btn-refresh">새로고침</button>
+            <button class="btn btn-sm" id="btn-xlsx">엑셀 다운로드</button>
+            <button class="btn btn-sm" id="btn-png">이미지 다운로드</button>
+            <button class="btn btn-sm btn-ghost" id="btn-reflections-back">돌아가기</button>
+          </div>
+        </div>
+        <p class="hint" id="reflections-note"></p>
+        <div class="teacher-table-wrap" id="teacher-table-wrap">
+          <table id="teacher-table">
+            <thead><tr><th>닉네임</th><th>캐릭터</th><th>최종 점수</th><th>수업 코드</th><th>제출 시각</th><th>소감</th></tr></thead>
+            <tbody id="teacher-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="engine.js"></script>
+  <script src="store.js"></script>
+  <script src="sound.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
