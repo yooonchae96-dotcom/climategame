@@ -8,6 +8,10 @@
   const ROUNDS = 10;
   const PHASE_LABEL = { lobby: "대기실", choosing: "선택 중", reveal: "결과 공개", final: "최종 결과" };
   const DIS_EMOJI = ["🌡️", "🌧️", "🌀", "⛺", "🏜️", "🔥", "🌊", "🦟", "❄️", "🧳", "🌪️", "🚰", "👷", "🧊", "🪓", "🍞", "🏫", "📄", "🌾", "🏛️"];
+  // 게이지 기준: 재산은 가장 부유한 캐릭터(500)가 꽉 찬 상태, 나머지는 그 비율. 몸·마음은 100 기준.
+  const MAX_MONEY = Math.max(...CHARACTERS.map(c => c.money));
+  // 재난 유형 (BGM·효과음 선택용): heat 폭염 / water 홍수·해수면 / storm 태풍·사이클론 / fire 산불 / cold 한파·얼음 / drought 가뭄 / social 대피소·난민·회의
+  const DIS_CAT = { 1: "heat", 2: "water", 3: "storm", 4: "social", 5: "drought", 6: "fire", 7: "water", 8: "water", 9: "cold", 10: "social", 11: "storm", 12: "drought", 13: "heat", 14: "cold", 15: "fire", 16: "social", 17: "social", 18: "social", 19: "heat", 20: "social" };
 
   const { db, mode, label: modeLabel } = await connectStore();
   // 소리 버튼 + 모든 버튼 클릭음
@@ -27,16 +31,42 @@
   const imgSrc = p => (window.IMAGES && window.IMAGES[p]) || p; // 아티팩트에서는 내장 이미지 사용
   function show(id) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); $(id).classList.add("active");
-    if (id !== "screen-board") SOUND.bgm(null);
+    if (id === "screen-teacher-login" || id === "screen-teacher-home") SOUND.bgm("title");
+    else if (id !== "screen-board") SOUND.bgm(null);
   }
   function showStep(root, id) { root.querySelectorAll(".step").forEach(s => s.classList.remove("active")); $(id).classList.add("active"); }
   function setAccent(color) { document.documentElement.style.setProperty("--accent", color); }
   function avatar(ch, size) {
     return `<div class="avatar" style="background:${ch.color}${size ? `;width:${size}px;height:${size}px` : ""}"><img src="${imgSrc(`images/char_${String(ch.id).padStart(2, "0")}.png`)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${ch.name[0]}'}))"></div>`;
   }
-  function statsHTML(st, mini) {
-    const row = (cls, l, v, max) => `<div class="stat stat-${cls}"><span>${l}</span><div class="stat-bar"><div class="stat-fill" style="width:${Math.min(100, v / max * 100)}%"></div></div><span class="stat-num">${v}</span></div>`;
-    return row("money", mini ? "재산" : "💰 재산", st.money, Math.max(st.start, 1)) + row("body", mini ? "몸" : "❤️ 몸", st.body, 100) + row("mind", mini ? "마음" : "💙 마음", st.mind, 100);
+  // prev를 주면 이전 상태 → 현재 상태로 변하는 게이지(유령 막대 + 이전 위치 표식 + 증감 숫자)를 만들고, animateGauges()로 움직입니다.
+  function statsHTML(st, mini, prev) {
+    const row = (cls, l, v, max, pv) => {
+      const pct = x => Math.min(100, Math.max(0, x / max * 100));
+      const from = pv === undefined ? v : pv, d = v - from;
+      const ghost = pv === undefined ? "" : `<div class="stat-ghost ${d < 0 ? "lost" : ""}" style="width:${pct(from)}%"></div><i class="stat-mark" style="left:${pct(from)}%"></i>`;
+      const chg = pv === undefined ? "" : `<small class="stat-chg ${d < 0 ? "neg" : d > 0 ? "pos" : "zero"}">${d === 0 ? "±0" : sign(d)}</small>`;
+      return `<div class="stat stat-${cls}"><span>${l}</span><div class="stat-bar">${ghost}<div class="stat-fill ${v > 0 ? "nz" : ""}" style="width:${pct(from)}%" data-to="${pct(v)}"></div></div><span class="stat-num"><b data-from="${from}" data-to="${v}">${from}</b>${chg}</span></div>`;
+    };
+    return row("money", mini ? "재산" : "💰 재산", st.money, MAX_MONEY, prev && prev.money) + row("body", mini ? "몸" : "❤️ 몸", st.body, 100, prev && prev.body) + row("mind", mini ? "마음" : "💙 마음", st.mind, 100, prev && prev.mind);
+  }
+  // 컨테이너 안의 게이지(막대 폭 + 숫자)를 이전 값에서 현재 값으로 움직입니다.
+  function animateGauges(root, delay) {
+    const fills = root.querySelectorAll(".stat-fill[data-to], .b-bar .fill[data-to]");
+    const nums = root.querySelectorAll("b[data-from][data-to]");
+    const DUR = 1100;
+    setTimeout(() => {
+      fills.forEach(el => { el.style.width = el.dataset.to + "%"; });
+      const t0 = performance.now();
+      const step = now => {
+        const k = Math.min(1, (now - t0) / DUR), e = 1 - Math.pow(1 - k, 3);
+        nums.forEach(el => { const a = +el.dataset.from, b = +el.dataset.to; el.textContent = Math.round(a + (b - a) * e); });
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+      // 화면이 뒤에 있어 애니메이션 프레임이 멈춰도 숫자는 최종값으로 맞춤
+      setTimeout(() => nums.forEach(el => { el.textContent = el.dataset.to; }), DUR + 100);
+    }, delay || 120);
   }
   function disasterImg(sc) { return `<img src="${imgSrc(sc.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${DIS_EMOJI[sc.id - 1] || "🌍"}'))">`; }
   const sessionRef = code => db.doc("sessions/" + code);
@@ -147,6 +177,7 @@
     const c = Object.assign({}, ch, { money: st.money, body: st.body, mind: st.mind });
     $("s-disaster").innerHTML = `<div class="d-img">${disasterImg(sc)}</div><div><div class="d-where">${sc.where}</div><h3>${sc.title}</h3><p>${sc.story}</p></div>`;
     $("situation-text").textContent = sc.situation(c);
+    $("choose-stats").innerHTML = statsHTML(st);
     const status = E.optionStatus(ch, st, sc);
     $("options").innerHTML = status.map(o => `<button class="option ${o.lock ? "locked" : ""}" data-i="${o.index}" ${o.lock ? "disabled" : ""}><span class="opt-no">${choiceLabel(o.index)}</span><span>${o.text}</span>${o.lock ? `<span class="lock-reason">🔒 ${o.lock}</span>` : ""}</button>`).join("");
     $("options").querySelectorAll(".option:not(.locked)").forEach(b => b.onclick = () => submitChoice(+b.dataset.i));
@@ -174,6 +205,9 @@
     if (first) {
       const bad = mine.dm + mine.db + mine.ds < 0;
       if (bad) { $("screen-student").classList.add("flash"); setTimeout(() => $("screen-student").classList.remove("flash"), 600); }
+      const prev = stateBefore(ss, S.pid, ch.id, r);
+      $("result-stats").innerHTML = `<div class="label">게이지 변화 (전 라운드 → 지금)</div>` + statsHTML(mine.state, false, prev);
+      animateGauges($("result-stats"), 350);
     }
     $("result-choice").textContent = `${sc.title} · 내 선택: ${mine.text}${mine.substituted ? " (제출하지 않아 자동 처리됨)" : ""}`;
     const d = (v, l) => `<div class="delta ${v < 0 ? "neg" : v > 0 ? "pos" : "zero"}">${sign(v)}<small>${l}</small></div>`;
@@ -312,43 +346,54 @@
     T.unsubS = sessionRef(code).onSnapshot(s => { if (s.exists) { T.session = s.data(); renderBoard(); } });
     T.unsubP = playersRef(code).onSnapshot(q => { T.players = q.docs.map(d => Object.assign({ pid: d.id }, d.data())); renderBoard(); });
   }
-  $("btn-b-exit").onclick = () => { if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP(); show("screen-teacher-home"); };
+  $("btn-b-exit").onclick = () => { if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP(); closePlayerModal(); show("screen-teacher-home"); };
 
   function renderBoard() {
     const ss = T.session; if (!ss) return;
     $("b-phase").textContent = ss.phase === "lobby" ? "대기실" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} 라운드 · ${PHASE_LABEL[ss.phase]}`;
     $("b-count").textContent = `참가 ${T.players.length}명`;
     const root = $("screen-board");
+    if (ss.phase !== "lobby") closePlayerModal();
     if (ss.phase === "lobby") {
       SOUND.bgm("lobby");
       if (T.lastCount !== undefined && T.players.length > T.lastCount) SOUND.sfx("join");
       T.lastCount = T.players.length;
-      $("lobby-players").innerHTML = T.players.map(p => { const ch = charOf(p.charId); return `<div class="p-chip ${p.isBot ? "bot" : ""}">${avatar(ch)}<div style="min-width:0"><div class="p-nick">${esc(p.nickname)}</div><div class="p-char">${ch.name}</div></div></div>`; }).join("") || `<p class="hint">아직 참가한 학생이 없습니다.</p>`;
+      $("lobby-players").innerHTML = T.players.map(p => { const ch = charOf(p.charId); const st = latestState(ss, p.pid, p.charId); return `<div class="p-chip ${p.isBot ? "bot" : ""}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 캐릭터 보기"><div class="p-head">${avatar(ch)}<div style="min-width:0"><div class="p-nick">${esc(p.nickname)}</div><div class="p-char">${ch.name}</div></div></div><div class="stats stats-chip">${statsHTML(st, true)}</div></div>`; }).join("") || `<p class="hint">아직 참가한 학생이 없습니다.</p>`;
+      $("lobby-players").querySelectorAll(".p-chip").forEach(el => { el.onclick = () => openPlayerModal(el.dataset.pid); el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPlayerModal(el.dataset.pid); } }; });
       $("btn-start-round").disabled = T.players.length === 0;
       showStep(root, "b-step-lobby");
     } else if (ss.phase === "choosing") {
       const sc = scenarioOf(ss.scenarioIds[ss.round]);
       const key = "c" + ss.round;
-      SOUND.bgm("choose");
+      const cat = DIS_CAT[sc.id] || "social";
+      SOUND.bgm(SOUND.bgmFor(cat));
       if (T.lastKey !== key) {
-        SOUND.sfx("disaster");
+        SOUND.sfx(SOUND.sfxFor(cat));
         $("b-disaster-where").textContent = sc.where; $("b-disaster-title").textContent = sc.title; $("b-disaster-story").textContent = sc.story;
         $("b-disaster-img").innerHTML = disasterImg(sc);
-        $("b-options").innerHTML = sc.options.map((o, i) => `<div><span class="opt-no">${choiceLabel(i)}</span>${o.text}</div>`).join("");
       }
-      const done = T.players.filter(p => p.choices && p.choices["r" + ss.round] !== undefined);
+      const pickOf = p => p.choices && p.choices["r" + ss.round];
+      const done = T.players.filter(p => pickOf(p) !== undefined);
       if (T.lastDone !== undefined && done.length > T.lastDone) SOUND.sfx("tick");
       T.lastDone = done.length;
+      // 선택지별 인원
+      const tally = sc.options.map(() => 0); done.forEach(p => { tally[pickOf(p)] = (tally[pickOf(p)] || 0) + 1; });
+      $("b-options").innerHTML = sc.options.map((o, i) => `<div><span class="opt-no pick-${i}">${choiceLabel(i)}</span>${o.text}<span class="opt-count">${tally[i]}명</span></div>`).join("");
       const humans = T.players.filter(p => !p.isBot);
       const humansDone = done.filter(p => !p.isBot);
       $("submit-count").textContent = humans.length ? `${humansDone.length} / ${humans.length}` : `${done.length} / ${T.players.length}`;
-      $("submit-list").innerHTML = T.players.map(p => `<span class="${(p.isBot || (p.choices && p.choices["r" + ss.round] !== undefined)) ? "done" : ""}">${esc(p.nickname)}${p.isBot ? "🤖" : ""}</span>`).join("");
+      // 캐릭터별로 누가 몇 번을 골랐는지
+      const byChar = {}; T.players.forEach(p => { (byChar[p.charId] = byChar[p.charId] || []).push(p); });
+      $("char-choices").innerHTML = CHARACTERS.filter(ch => byChar[ch.id]).map(ch => {
+        const ps = byChar[ch.id];
+        const picks = ps.map(p => { const c = pickOf(p); return `<span class="pick ${c === undefined ? "wait" : "pick-" + c}">${c === undefined ? (p.isBot ? "🤖" : "…") : choiceLabel(c)}<small>${esc(p.nickname)}</small></span>`; }).join("");
+        return `<div class="cc-row" style="border-left-color:${ch.color}">${avatar(ch)}<div class="cc-name">${ch.name}<small>${ps.length}명</small></div><div class="cc-picks">${picks}</div></div>`;
+      }).join("");
       showStep(root, "b-step-choosing");
       T.lastKey = key;
     } else if (ss.phase === "reveal") {
       SOUND.bgm("reveal");
-      if (T.lastKey !== "v" + ss.round) SOUND.sfx("reveal");
-      renderRevealBoard(ss);
+      if (T.lastKey !== "v" + ss.round) { SOUND.sfx("reveal"); renderRevealBoard(ss, true); }
       showStep(root, "b-step-reveal");
       T.lastKey = "v" + ss.round;
     } else if (ss.phase === "final") {
@@ -401,7 +446,8 @@
     $("btn-reveal").disabled = false;
   };
 
-  function renderRevealBoard(ss) {
+  // animate=true면 각 카드의 게이지가 전 라운드 값에서 지금 값으로 움직이며 숫자가 바뀜 (유령 막대로 잃은 만큼 표시)
+  function renderRevealBoard(ss, animate) {
     const r = ss.round, sc = scenarioOf(ss.scenarioIds[r]);
     const res = ss.results && ss.results["r" + r]; if (!res) return;
     $("reveal-title").innerHTML = `${r + 1}라운드 · ${sc.title}<small>${sc.where}</small>`;
@@ -416,18 +462,46 @@
     list.forEach(x => {
       const ch = charOf(x.charId);
       if (T.sort === "char" && ch.id !== lastChar) { html += `<div class="board-group">${ch.name} · ${ch.place}</div>`; lastChar = ch.id; }
-      const dl = v => `<span class="${v < 0 ? "neg" : v > 0 ? "pos" : ""}">${sign(v)}</span>`;
-      const bar = (v, max, color) => `<div class="b-bar"><i style="width:${Math.min(100, v / max * 100)}%;background:${color}"></i></div>`;
+      const prev = stateBefore(ss, x.pid, x.charId, r);
+      const g = (icon, v, pv, max, color) => {
+        const pct = n => Math.min(100, Math.max(0, n / max * 100)), d = v - pv;
+        return `<div class="b-g"><span class="b-g-ico">${icon}</span><div class="b-bar">${d !== 0 ? `<i class="ghost ${d < 0 ? "lost" : ""}" style="width:${pct(pv)}%"></i>` : ""}<i class="fill" style="width:${pct(animate ? pv : v)}%;background:${color}" data-to="${pct(v)}"></i></div><span class="b-g-num"><b data-from="${animate ? pv : v}" data-to="${v}">${animate ? pv : v}</b><small class="${d < 0 ? "neg" : d > 0 ? "pos" : ""}">${d === 0 ? "" : sign(d)}</small></span></div>`;
+      };
       html += `<div class="bcard ${x.pid === worstPid ? "worst" : x.pid === bestPid ? "best" : ""}" style="border-top-color:${ch.color}">
         <div class="b-top">${avatar(ch)}<div style="min-width:0"><div class="b-nick">${esc(x.nickname)}${x.isBot ? "🤖" : ""}</div><div class="b-char">${ch.name}</div></div></div>
-        <div class="b-choice">${choiceLabel(x.choice)}. ${x.text}</div>
-        <div class="b-delta">${dl(x.dm)}${dl(x.db)}${dl(x.ds)}</div>
-        <div class="b-bars">${bar(x.state.money, Math.max(x.state.start, 1), "var(--money)")}${bar(x.state.body, 100, "var(--body)")}${bar(x.state.mind, 100, "var(--mind)")}</div>
+        <div class="b-choice"><span class="opt-no pick-${x.choice}">${choiceLabel(x.choice)}</span>${x.text}</div>
+        <div class="b-gauges">${g("💰", x.state.money, prev.money, MAX_MONEY, "var(--money)")}${g("❤️", x.state.body, prev.body, 100, "var(--body)")}${g("💙", x.state.mind, prev.mind, 100, "var(--mind)")}</div>
         <div class="b-score">누적 ${x.score}점</div></div>`;
     });
     $("board-grid").innerHTML = html;
+    if (animate) {
+      animateGauges($("board-grid"), 500);
+      const sum = list.reduce((a, x) => a + x.dm + x.db + x.ds, 0);
+      setTimeout(() => SOUND.sfx(sum < 0 ? "drain" : "rise"), 500);
+    }
   }
-  document.querySelectorAll(".reveal-sort .chip").forEach(b => b.onclick = () => { T.sort = b.dataset.sort; document.querySelectorAll(".reveal-sort .chip").forEach(c => c.classList.toggle("active", c === b)); renderRevealBoard(T.session); });
+  // 대기실 참가자 모달
+  function openPlayerModal(pid) {
+    const p = T.players.find(x => x.pid === pid); if (!p || !T.session) return;
+    const ch = charOf(p.charId), st = latestState(T.session, pid, p.charId);
+    const m = $("player-modal");
+    m.style.setProperty("--accent", ch.color);
+    $("m-portrait").style.background = ch.color;
+    $("m-portrait").innerHTML = `<img src="${imgSrc(`images/char_${String(ch.id).padStart(2, "0")}.png`)}" alt="${ch.name}">`;
+    $("m-portrait").querySelector("img").onerror = function () { this.replaceWith(Object.assign(document.createElement("div"), { className: "portrait-fallback", textContent: ch.name[0] })); };
+    $("m-nick").textContent = `${p.nickname}${p.isBot ? " 🤖" : ""} 님의 캐릭터`;
+    $("m-name").textContent = ch.name; $("m-age").textContent = `${ch.age}세 · ${ch.sex}`; $("m-place").textContent = ch.place;
+    $("m-traits").innerHTML = ch.traits.map(t => `<li>${t}</li>`).join("");
+    $("m-strength").textContent = ch.strength;
+    $("m-stats").innerHTML = statsHTML(st);
+    m.classList.remove("hidden");
+    SOUND.sfx("pop");
+  }
+  function closePlayerModal() { const m = $("player-modal"); if (m && !m.classList.contains("hidden")) m.classList.add("hidden"); }
+  $("btn-player-modal-close").onclick = closePlayerModal;
+  $("player-modal-backdrop").onclick = closePlayerModal;
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closePlayerModal(); });
+  document.querySelectorAll(".reveal-sort .chip").forEach(b => b.onclick = () => { T.sort = b.dataset.sort; document.querySelectorAll(".reveal-sort .chip").forEach(c => c.classList.toggle("active", c === b)); renderRevealBoard(T.session, false); });
 
   $("btn-next-round").onclick = async () => {
     const r = T.session.round;

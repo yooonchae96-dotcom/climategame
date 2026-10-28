@@ -66,6 +66,7 @@
         <div class="step" id="s-step-choose">
           <div class="disaster-strip" id="s-disaster"></div>
           <div class="situation-box"><div class="label">내 처지</div><p id="situation-text"></p></div>
+          <div class="my-gauge-box"><div class="label">내 현재 게이지</div><div class="stats" id="choose-stats"></div></div>
           <div class="label">어떻게 할까?</div>
           <div class="options" id="options"></div>
           <div class="submitted-box hidden" id="submitted-box">✅ 제출했어요. 선생님이 결과를 공개할 때까지 기다려 주세요.</div>
@@ -76,6 +77,7 @@
             <div class="label">이번 라운드 결과</div>
             <p class="result-choice" id="result-choice"></p>
             <div class="deltas" id="result-deltas"></div>
+            <div class="stats gauge-anim" id="result-stats"></div>
             <p class="result-why" id="result-why"></p>
             <div class="class-pos" id="class-pos"></div>
           </div>
@@ -194,7 +196,8 @@
             <div class="submit-status">
               <div class="label">제출 현황</div>
               <div class="big-count" id="submit-count"></div>
-              <div class="submit-list" id="submit-list"></div>
+              <div class="label">캐릭터별 선택</div>
+              <div class="char-choices" id="char-choices"></div>
               <button class="btn btn-big" id="btn-reveal">결과 공개</button>
               <p class="hint">제출하지 않은 학생은 첫 번째 가능한 선택지로 처리됩니다.</p>
             </div>
@@ -227,6 +230,25 @@
         </div>
       </div>
     </section>
+
+    <!-- ===== 교사: 참가자 캐릭터 모달 (대기실에서 참가자 클릭) ===== -->
+    <div class="modal hidden" id="player-modal">
+      <div class="modal-backdrop" id="player-modal-backdrop"></div>
+      <div class="modal-card" role="dialog" aria-modal="true">
+        <button class="btn btn-sm btn-ghost modal-close" id="btn-player-modal-close">닫기 ✕</button>
+        <div class="char-layout modal-char">
+          <div class="char-portrait" id="m-portrait"></div>
+          <div class="char-info">
+            <div class="m-nick" id="m-nick"></div>
+            <div class="char-name-row"><span id="m-name" class="char-name"></span><span id="m-age" class="char-age"></span></div>
+            <p id="m-place" class="char-place"></p>
+            <ul id="m-traits" class="char-traits"></ul>
+            <p id="m-strength" class="char-strength"></p>
+            <div class="stats" id="m-stats"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== 교사: 소감 목록 ===== -->
     <section id="screen-reflections" class="screen">
