@@ -95,8 +95,131 @@
     return { doc: docRef, collection: colRef };
   }
 
+  // ---------- Firebase 실시간 데이터베이스 백엔드 (모든 기기 실시간 공유) ----------
+  function FirebaseRTDB(baseUrl) {
+    const rootUrl = baseUrl.replace(/\/$/, "");
+    const listeners = new Set();
+    const notify = () => listeners.forEach(fn => { try { fn(); } catch (e) {} });
+
+    // 실시간 빠른 폴링 (1.5초)
+    setInterval(notify, 1500);
+
+    const snap = (id, data) => ({
+      id,
+      exists: data !== null && data !== undefined,
+      data: () => data,
+      metadata: { fromCache: false, hasPendingWrites: false }
+    });
+    const idOf = path => path.split("/").pop();
+
+    async function getVal(path) {
+      try {
+        const r = await fetch(`${rootUrl}/${path}.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) return undefined;
+        const data = await r.json();
+        return data === null ? undefined : data;
+      } catch (e) {
+        return undefined;
+      }
+    }
+
+    async function setVal(path, data) {
+      try {
+        await fetch(`${rootUrl}/${path}.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        notify();
+      } catch (e) {}
+    }
+
+    async function updateVal(path, data) {
+      try {
+        await fetch(`${rootUrl}/${path}.json`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        notify();
+      } catch (e) {}
+    }
+
+    async function deleteVal(path) {
+      try {
+        await fetch(`${rootUrl}/${path}.json`, { method: "DELETE" });
+        notify();
+      } catch (e) {}
+    }
+
+    async function listDocs(colPath) {
+      try {
+        const r = await fetch(`${rootUrl}/${colPath}.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) return [];
+        const obj = await r.json();
+        if (!obj || typeof obj !== "object") return [];
+        return Object.keys(obj).sort().map(k => snap(k, obj[k]));
+      } catch (e) {
+        return [];
+      }
+    }
+
+    const subscribe = fn => {
+      listeners.add(fn);
+      fn();
+      return () => listeners.delete(fn);
+    };
+
+    const docRef = path => ({
+      id: idOf(path),
+      path,
+      async get() { return snap(idOf(path), await getVal(path)); },
+      async set(data) { await setVal(path, JSON.parse(JSON.stringify(data))); },
+      async update(data) { await updateVal(path, JSON.parse(JSON.stringify(data))); },
+      async delete() { await deleteVal(path); },
+      onSnapshot(fn) {
+        let last;
+        return subscribe(async () => {
+          try {
+            const d = await getVal(path);
+            const s = JSON.stringify(d);
+            if (s !== last) {
+              last = s;
+              fn(snap(idOf(path), d));
+            }
+          } catch (e) {}
+        });
+      },
+      collection(sub) { return colRef(path + "/" + sub); }
+    });
+
+    const colRef = path => ({
+      path,
+      doc(id) { return docRef(path + "/" + (id || Math.random().toString(36).slice(2, 10))); },
+      async get() {
+        const docs = await listDocs(path);
+        return { docs, size: docs.length, empty: !docs.length };
+      },
+      onSnapshot(fn) {
+        let last;
+        return subscribe(async () => {
+          try {
+            const docs = await listDocs(path);
+            const s = JSON.stringify(docs.map(d => [d.id, d.data()]));
+            if (s !== last) {
+              last = s;
+              fn({ docs, size: docs.length, empty: !docs.length });
+            }
+          } catch (e) {}
+        });
+      }
+    });
+
+    return { doc: docRef, collection: colRef };
+  }
+
   // ---------- 연결 ----------
-  //   우선순위: Supabase 설정이 있으면 Supabase → 아티팩트 안이면 claude db → 아니면 로컬
+  //   우선순위: Supabase 설정 -> claude db -> 기본 클라우드 실시간 저장소(RTDB) -> 로컬
   async function connectStore() {
     const CFG = root.CONFIG || {};
     if (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY) {
@@ -105,6 +228,13 @@
     let db = null;
     try { if (root.claude && root.claude.use) db = await root.claude.use("db"); } catch (e) { db = null; }
     if (db) return { db, mode: "db", label: "실시간 공유 저장소" };
+
+    // 클라우드 실시간 저장소 (모든 기기 실시간 공유)
+    try {
+      const cloudUrl = CFG.FIREBASE_DB_URL || "https://amugana-df341-default-rtdb.firebaseio.com/climate_game";
+      return { db: FirebaseRTDB(cloudUrl), mode: "cloud", label: "실시간 클라우드 저장소 (모든 기기 참여 가능)" };
+    } catch (e) {}
+
     return { db: LocalDB(), mode: "local", label: "이 브라우저의 탭끼리만 공유(테스트 모드)" };
   }
 

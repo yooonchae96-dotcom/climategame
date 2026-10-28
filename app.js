@@ -54,8 +54,8 @@
   //  학생
   // ================================================================
   let S = { code: null, pid: null, player: null, session: null, unsubS: null, unsubP: null, lastPhaseKey: null, chosen: null };
-  try { S.pid = sessionStorage.getItem("cg-pid"); } catch (e) {}
-  if (!S.pid) { S.pid = "p" + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) {} }
+  try { S.pid = sessionStorage.getItem("cg-pid"); } catch (e) { }
+  if (!S.pid) { S.pid = "p" + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) { } }
 
   $("btn-role-student").onclick = () => { const notice = $("qr-join-notice"); if (notice) notice.classList.add("hidden"); show("screen-join"); $("input-code").focus(); };
   $("btn-join-back").onclick = () => show("screen-start");
@@ -85,7 +85,7 @@
       await pdoc.update({ nickname: nick });
     }
     S.code = code;
-    try { sessionStorage.setItem("cg-code", code); } catch (e) {}
+    try { sessionStorage.setItem("cg-code", code); } catch (e) { }
     startStudent();
   }
 
@@ -283,7 +283,7 @@
     el.innerHTML = "";
     let joinUrl = `${window.location.origin}${window.location.pathname}?code=${encodeURIComponent(code)}`;
     if (window.location.protocol === "file:") {
-      joinUrl = `https://climategame.vercel.app/?code=${encodeURIComponent(code)}`;
+      joinUrl = `https://climate-game-olive-nine.vercel.app/?code=${encodeURIComponent(code)}`;
     }
     if (window.QRCode) {
       try {
@@ -304,7 +304,7 @@
   function openBoard(code) {
     SOUND.mute(false); soundBtn.classList.remove("hidden");
     T.code = code; T.lastKey = null;
-    try { localStorage.setItem("cg-teacher-code", code); } catch (e) {}
+    try { localStorage.setItem("cg-teacher-code", code); } catch (e) { }
     $("b-code").textContent = code; $("big-code").textContent = code;
     renderLobbyQR(code);
     show("screen-board");
@@ -515,7 +515,7 @@
     const queryCode = urlParams.get("code") || urlParams.get("c");
 
     let savedCode = null;
-    try { savedCode = sessionStorage.getItem("cg-code"); } catch (e) {}
+    try { savedCode = sessionStorage.getItem("cg-code"); } catch (e) { }
 
     // 1. QR코드 파라미터로 접속한 경우
     if (queryCode && /^\d{4}$/.test(queryCode)) {
