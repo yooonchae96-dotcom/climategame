@@ -47,6 +47,7 @@ button, input, textarea, select { font-family: inherit; font-weight: 700; }
 .screen-foot { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: auto; padding-top: 12px; }
 .center-card { margin: auto; width: min(620px, 100%); background: var(--card); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; text-align: left; font-size: 15px; color: var(--muted); }
+.qr-notice { background: #E7F5FF; border: 2px solid #1971C2; color: #1864AB; font-size: 15px; font-weight: 900; padding: 10px 14px; border-radius: 12px; }
 input[type=text], input[type=password] { font-size: 22px; padding: 10px 14px; border: var(--border); border-radius: 12px; width: 100%; text-align: center; background: var(--card); color: var(--ink); }
 textarea { font-size: 16px; padding: 10px; border: var(--border); border-radius: 12px; width: 100%; resize: none; line-height: 1.5; background: var(--card); color: var(--ink); }
 select { font-size: 15px; padding: 7px 10px; border: var(--border); border-radius: 10px; background: var(--card); color: var(--ink); }
@@ -167,9 +168,20 @@ select { font-size: 15px; padding: 7px 10px; border: var(--border); border-radiu
 .b-tools { margin-left: auto; display: flex; gap: 8px; }
 .b-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-.lobby-layout { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex: 1; min-height: 0; }
-.lobby-left { display: flex; flex-direction: column; gap: 12px; }
-.big-code { font-size: clamp(64px, 12vw, 140px); font-weight: 900; letter-spacing: 8px; background: var(--card); border: var(--border); border-radius: 24px; box-shadow: 8px 8px 0 #111; text-align: center; padding: 10px; font-variant-numeric: tabular-nums; }
+.lobby-layout { display: grid; grid-template-columns: 1.15fr 1.45fr; gap: 20px; flex: 1; min-height: 0; }
+.lobby-left { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px; }
+.lobby-join-box { display: flex; flex-direction: column; gap: 12px; }
+.lobby-code-card, .lobby-qr-card { background: var(--card); border: var(--border); border-radius: 18px; box-shadow: 6px 6px 0 #111; padding: 14px 18px; }
+.lobby-card-label { font-size: 14px; font-weight: 900; color: var(--muted); margin-bottom: 6px; }
+.lobby-code-card .big-code { font-size: clamp(48px, 6vw, 92px); font-weight: 900; letter-spacing: 8px; background: #fff; border: 2px solid #111; border-radius: 14px; box-shadow: 4px 4px 0 #111; text-align: center; padding: 6px 12px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.qr-container-box { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.lobby-qrcode { background: #fff; border: 2px solid #111; border-radius: 14px; padding: 10px; box-shadow: 4px 4px 0 #111; display: inline-flex; justify-content: center; align-items: center; min-width: 200px; min-height: 200px; }
+.lobby-qrcode img, .lobby-qrcode canvas { display: block; border-radius: 6px; width: 180px !important; height: 180px !important; }
+.qr-guide-text { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 6px; }
+.qr-badge { display: inline-flex; align-items: center; width: fit-content; background: var(--ink); color: #fff; font-size: 13px; font-weight: 900; padding: 3px 10px; border-radius: 999px; }
+.qr-guide-text p { font-size: 14px; line-height: 1.5; color: var(--ink); margin: 0; }
+.qr-guide-text strong { color: #d9480f; }
+
 .player-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-content: start; overflow: auto; }
 .p-chip { display: flex; align-items: center; gap: 8px; background: var(--card); border: 2px solid #111; border-radius: 10px; padding: 6px 8px; font-size: 14px; min-width: 0; }
 .p-chip .avatar { width: 30px; height: 30px; font-size: 13px; }

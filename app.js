@@ -57,7 +57,7 @@
   try { S.pid = sessionStorage.getItem("cg-pid"); } catch (e) {}
   if (!S.pid) { S.pid = "p" + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) {} }
 
-  $("btn-role-student").onclick = () => { show("screen-join"); $("input-code").focus(); };
+  $("btn-role-student").onclick = () => { const notice = $("qr-join-notice"); if (notice) notice.classList.add("hidden"); show("screen-join"); $("input-code").focus(); };
   $("btn-join-back").onclick = () => show("screen-start");
   $("btn-join").onclick = joinSession;
   $("input-nickname").addEventListener("keydown", e => { if (e.key === "Enter") joinSession(); });
@@ -277,11 +277,36 @@
     openBoard(code);
   };
 
+  function renderLobbyQR(code) {
+    const el = $("lobby-qrcode");
+    if (!el) return;
+    el.innerHTML = "";
+    let joinUrl = `${window.location.origin}${window.location.pathname}?code=${encodeURIComponent(code)}`;
+    if (window.location.protocol === "file:") {
+      joinUrl = `https://climategame.vercel.app/?code=${encodeURIComponent(code)}`;
+    }
+    if (window.QRCode) {
+      try {
+        new QRCode(el, {
+          text: joinUrl,
+          width: 180,
+          height: 180,
+          colorDark: "#111111",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.error("QR Code error:", e);
+      }
+    }
+  }
+
   function openBoard(code) {
     SOUND.mute(false); soundBtn.classList.remove("hidden");
     T.code = code; T.lastKey = null;
     try { localStorage.setItem("cg-teacher-code", code); } catch (e) {}
     $("b-code").textContent = code; $("big-code").textContent = code;
+    renderLobbyQR(code);
     show("screen-board");
     if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP();
     T.unsubS = sessionRef(code).onSnapshot(s => { if (s.exists) { T.session = s.data(); renderBoard(); } });
@@ -484,10 +509,49 @@
     canvas.toBlob(blob => saveFile(`기후불평등게임_소감_${today()}.png`, blob), "image/png");
   };
 
-  // ---------------- 이어서 ----------------
+  // ---------------- 이어서 & QR 바로 참가 ----------------
   (async function resume() {
-    let code = null; try { code = sessionStorage.getItem("cg-code"); } catch (e) {}
-    if (code) { const s = await sessionRef(code).get(); const p = await playersRef(code).doc(S.pid).get(); if (s.exists && p.exists) { S.code = code; startStudent(); return; } }
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryCode = urlParams.get("code") || urlParams.get("c");
+
+    let savedCode = null;
+    try { savedCode = sessionStorage.getItem("cg-code"); } catch (e) {}
+
+    // 1. QR코드 파라미터로 접속한 경우
+    if (queryCode && /^\d{4}$/.test(queryCode)) {
+      // 이미 같은 세션에 참가 중이었다면 바로 학생 화면으로 복구
+      if (savedCode === queryCode) {
+        const s = await sessionRef(queryCode).get();
+        const p = await playersRef(queryCode).doc(S.pid).get();
+        if (s.exists && p.exists) {
+          S.code = queryCode;
+          startStudent();
+          return;
+        }
+      }
+      // 새 참가이거나 세션이 없으면 참가 폼에 코드 자동 입력 후 닉네임 입력 대기
+      $("input-code").value = queryCode;
+      const notice = $("qr-join-notice");
+      if (notice) notice.classList.remove("hidden");
+      show("screen-join");
+      setTimeout(() => {
+        const nick = $("input-nickname");
+        if (nick) nick.focus();
+      }, 150);
+      return;
+    }
+
+    // 2. 기존 학생 세션 복구
+    if (savedCode) {
+      const s = await sessionRef(savedCode).get();
+      const p = await playersRef(savedCode).doc(S.pid).get();
+      if (s.exists && p.exists) {
+        S.code = savedCode;
+        startStudent();
+        return;
+      }
+    }
+
     show("screen-start");
   })();
 })();

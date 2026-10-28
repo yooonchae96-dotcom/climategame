@@ -29,6 +29,7 @@
     <section id="screen-join" class="screen">
       <div class="center-card">
         <h2>수업에 참가하기</h2>
+        <div class="qr-notice hidden" id="qr-join-notice">✨ QR코드로 수업 코드가 자동 입력되었습니다!</div>
         <label class="field"><span>수업 코드</span><input id="input-code" type="text" inputmode="numeric" maxlength="4" placeholder="선생님 화면의 4자리 숫자"></label>
         <label class="field"><span>닉네임 (실명 금지, 2~10글자)</span><input id="input-nickname" type="text" maxlength="10" placeholder="예: 바람개비"></label>
         <p class="error" id="join-error"></p>
@@ -153,8 +154,23 @@
         <div class="step" id="b-step-lobby">
           <div class="lobby-layout">
             <div class="lobby-left">
-              <div class="big-code" id="big-code"></div>
-              <p class="hint">학생은 '학생으로 참가' → 이 코드와 닉네임을 입력합니다. 캐릭터는 자동으로 배정됩니다.</p>
+              <div class="lobby-join-box">
+                <div class="lobby-code-card">
+                  <div class="lobby-card-label">수업 참가 코드</div>
+                  <div class="big-code" id="big-code"></div>
+                </div>
+                <div class="lobby-qr-card">
+                  <div class="lobby-card-label">QR코드 바로 참가</div>
+                  <div class="qr-container-box">
+                    <div class="lobby-qrcode" id="lobby-qrcode"></div>
+                    <div class="qr-guide-text">
+                      <span class="qr-badge">📱 카메라로 스캔</span>
+                      <p>스캔 시 코드가 자동으로 입력되어<br><strong>닉네임만 넣고 바로 참가</strong>할 수 있습니다.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="hint">학생은 스마트폰/태블릿 카메라로 QR을 찍거나 사이트에서 4자리 코드를 입력합니다.</p>
               <div class="screen-foot">
                 <button class="btn btn-ghost" id="btn-add-bots">가상 학생으로 32명 채우기</button>
                 <button class="btn btn-big" id="btn-start-round">1라운드 시작</button>
@@ -244,6 +260,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
   <script src="data.js"></script>
