@@ -15,13 +15,20 @@
 
   const { db, mode, label: modeLabel } = await connectStore();
   // 소리 버튼 + 모든 버튼 클릭음
-  const soundBtn = $("btn-sound");
-  const paintSound = () => { soundBtn.textContent = SOUND.enabled ? "🔊" : "🔇"; soundBtn.classList.toggle("off", !SOUND.enabled); };
+  const soundBtn = $("btn-sound"), soundPanel = $("sound-panel"), volRange = $("vol-range"), muteBtn = $("btn-mute");
+  const paintSound = () => { const on = SOUND.enabled; soundBtn.textContent = on ? "🔊" : "🔇"; soundBtn.classList.toggle("off", !on); muteBtn.textContent = on ? "🔇 소리 끄기" : "🔊 소리 켜기"; volRange.value = Math.round(SOUND.volume * 100); };
   paintSound();
-  soundBtn.classList.add("hidden");
-  soundBtn.onclick = () => { SOUND.toggle(); paintSound(); if (SOUND.enabled) SOUND.sfx("click"); };
-  document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && b !== soundBtn && !b.classList.contains("option")) SOUND.sfx("click"); }, true);
-  $("store-mode").textContent = modeLabel;
+  soundBtn.onclick = () => { soundPanel.classList.toggle("hidden"); paintSound(); };
+  muteBtn.onclick = () => { SOUND.toggle(); paintSound(); if (SOUND.enabled) SOUND.sfx("click"); };
+  volRange.oninput = () => { SOUND.setVolume(volRange.value / 100); };
+  volRange.onchange = () => { SOUND.sfx("click"); };
+  document.addEventListener("click", e => { if (!e.target.closest(".sound-ctl")) soundPanel.classList.add("hidden"); });
+  document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && !b.closest(".sound-ctl") && !b.classList.contains("option")) SOUND.sfx("click"); }, true);
+  // 토스트: data-tip이 있는 요소에 마우스를 올리거나 누르면 중요한 안내가 잠깐 뜬다
+  const toastEl = $("toast"); let toastTimer = null, lastTip = null;
+  function showToast(msg, ms) { toastEl.textContent = msg; toastEl.classList.remove("hidden"); clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.classList.add("hidden"); lastTip = null; }, ms || 3200); }
+  document.addEventListener("mouseover", e => { const el = e.target.closest("[data-tip]"); if (el && el !== lastTip) { lastTip = el; showToast(el.dataset.tip); } });
+  document.addEventListener("click", e => { const el = e.target.closest("[data-tip]"); if (el) { lastTip = el; showToast(el.dataset.tip); } }, true);
 
   // ---------------- 공통 도우미 ----------------
   const charOf = id => CHARACTERS.find(c => c.id === id);
@@ -32,7 +39,7 @@
   function show(id) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); $(id).classList.add("active");
     if (id === "screen-teacher-login" || id === "screen-teacher-home") SOUND.bgm("title");
-    else if (id !== "screen-board") SOUND.bgm(null);
+    else if (id !== "screen-board" && id !== "screen-student") SOUND.bgm(null);
   }
   function showStep(root, id) { root.querySelectorAll(".step").forEach(s => s.classList.remove("active")); $(id).classList.add("active"); }
   function setAccent(color) { document.documentElement.style.setProperty("--accent", color); }
@@ -110,7 +117,9 @@
   try { S.pid = sessionStorage.getItem("cg-pid"); } catch (e) { }
   if (!S.pid) { S.pid = "p" + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) { } }
 
-  $("btn-role-student").onclick = () => { const notice = $("qr-join-notice"); if (notice) notice.classList.add("hidden"); show("screen-join"); $("input-code").focus(); };
+  $("btn-role-student").onclick = () => { show("screen-join"); $("input-code").focus(); };
+  const pidKey = code => "cg-pid-" + code;
+  function rememberPid(code) { try { sessionStorage.setItem("cg-pid", S.pid); localStorage.setItem(pidKey(code), S.pid); } catch (e) { } }
   $("btn-join-back").onclick = () => show("screen-start");
   $("btn-join").onclick = joinSession;
   $("input-nickname").addEventListener("keydown", e => { if (e.key === "Enter") joinSession(); });
@@ -124,11 +133,16 @@
     const snap = await sessionRef(code).get();
     if (!snap.exists) { $("join-error").textContent = "그 코드의 수업이 없습니다. 선생님 화면의 코드를 다시 확인하세요."; return; }
     const session = snap.data();
-    const pdoc = playersRef(code).doc(S.pid);
-    const mine = await pdoc.get();
+    let pdoc = playersRef(code).doc(S.pid);
+    let mine = await pdoc.get();
+    const all = await playersRef(code).get();
+    if (!mine.exists) {
+      // 튕긴 학생: 같은 닉네임으로 다시 들어오면 원래 캐릭터(원래 아이디)로 이어서
+      const same = all.docs.find(d => !d.data().isBot && d.data().nickname === nick);
+      if (same) { S.pid = same.id; pdoc = playersRef(code).doc(S.pid); mine = same; }
+    }
     if (!mine.exists) {
       // 캐릭터 배정: 가장 적게 쓰인 캐릭터 중 무작위
-      const all = await playersRef(code).get();
       const used = {}; all.docs.forEach(d => { const c = d.data().charId; used[c] = (used[c] || 0) + 1; });
       const min = Math.min(...CHARACTERS.map(c => used[c.id] || 0));
       const pool = CHARACTERS.filter(c => (used[c.id] || 0) === min);
@@ -139,11 +153,12 @@
     }
     S.code = code;
     try { sessionStorage.setItem("cg-code", code); } catch (e) { }
+    rememberPid(code);
     startStudent();
   }
 
   function startStudent() {
-    SOUND.mute(true); soundBtn.classList.add("hidden");
+    SOUND.setRole("student"); paintSound();
     show("screen-student");
     if (S.unsubS) S.unsubS();
     if (S.unsubP) S.unsubP();
@@ -159,7 +174,11 @@
     const st = latestState(ss, S.pid, p.charId);
     $("s-mini").innerHTML = avatar(ch) + `<span>${ch.name}</span><span class="hint">· ${esc(p.nickname)}</span>`;
     $("s-profile").innerHTML = `<ul class="char-traits s-traits">${ch.traits.map(t => `<li>${t}</li>`).join("")}</ul><div class="stats s-stats">${statsHTML(st, true)}</div>`;
-    $("s-round").textContent = ss.phase === "lobby" ? "대기 중" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} · ${PHASE_LABEL[ss.phase]}`;
+    $("s-round").textContent = (st.dead ? "💀 " : "") + (ss.phase === "lobby" ? "대기 중" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} · ${PHASE_LABEL[ss.phase]}`);
+    if (ss.phase === "lobby") SOUND.bgm("lobby");
+    else if (ss.phase === "choosing") SOUND.bgm(SOUND.bgmFor(DIS_CAT[ss.scenarioIds[ss.round]] || "social"));
+    else if (ss.phase === "reveal") SOUND.bgm("reveal");
+    else if (ss.phase === "final") SOUND.bgm("final");
     $("status-stats").innerHTML = statsHTML(st);
     $("status-history").innerHTML = historyHTML(ss, S.pid) || `<p class="hint">아직 겪은 재난이 없습니다.</p>`;
 
@@ -193,7 +212,6 @@
     $("char-traits").innerHTML = ch.traits.map(t => `<li>${t}</li>`).join("");
     $("char-strength").textContent = ch.strength;
     $("char-stats").innerHTML = statsHTML(st);
-    $("wait-note").classList.add("pulse");
   }
 
   function renderChoose(ss, ch, st) {
@@ -202,9 +220,15 @@
     $("s-disaster").innerHTML = `<div class="d-img">${disasterImg(sc)}</div><div><div class="d-where">${sc.where}</div><h3>${sc.title}</h3><p>${sc.story}</p></div>`;
     $("situation-text").textContent = sc.situation(c);
     $("choose-stats").innerHTML = statsHTML(st);
+    if (st.dead) {
+      $("situation-text").textContent = `${st.deadRound + 1}라운드에 ${st.deadWhy} 세상을 떠났다.`;
+      $("options").innerHTML = `<div class="dead-box">💀 ${ch.name}은(는) 더 이상 게임을 할 수 없습니다.<br>남은 라운드는 친구들의 결과를 지켜봅니다.</div>`;
+      $("submitted-box").classList.add("hidden");
+      return;
+    }
     const status = E.optionStatus(ch, st, sc);
     const fx = (v, ic) => `<span class="${v < 0 ? "neg" : v > 0 ? "pos" : "zero"}">${ic} ${sign(v)}</span>`;
-    const effHTML = i => { let r = null; try { r = sc.options[i].effect(c); } catch (e) { } return r ? `<span class="opt-eff">${fx(r.m, "💰")}${fx(r.b, "❤️")}${fx(r.s, "💙")}</span>` : ""; };
+    const effHTML = i => { const o = status[i]; const r = o && o.effect ? o.effect.raw : null; return r ? `<span class="opt-eff">${fx(r.m, "💰")}${fx(r.b, "❤️")}${fx(r.s, "💙")}</span>` : ""; };
     $("options").innerHTML = status.map(o => `<button class="option ${o.lock ? "locked" : ""}" data-i="${o.index}" ${o.lock ? "disabled" : ""}><span class="opt-no">${choiceLabel(o.index)}</span><span>${o.text}</span>${effHTML(o.index)}${o.lock ? `<span class="lock-reason">🔒 ${o.lock}</span>` : ""}</button>`).join("");
     $("options").querySelectorAll(".option:not(.locked)").forEach(b => b.onclick = () => submitChoice(+b.dataset.i));
     markChosen();
@@ -238,7 +262,8 @@
     $("result-choice").textContent = `${sc.title} · 내 선택: ${mine.text}${mine.substituted ? " (제출하지 않아 자동 처리됨)" : ""}`;
     const d = (v, l) => `<div class="delta ${v < 0 ? "neg" : v > 0 ? "pos" : "zero"}">${sign(v)}<small>${l}</small></div>`;
     $("result-deltas").innerHTML = d(mine.dm, "💰 재산") + d(mine.db, "❤️ 몸") + d(mine.ds, "💙 마음");
-    $("result-why").textContent = mine.why;
+    const notes = (mine.notes || []).map(n => `<div>· ${esc(n)}</div>`).join("");
+    $("result-why").innerHTML = (mine.dead && mine.deadRound === r ? `<div class="dead-box">💀 ${mine.deadWhy} 세상을 떠났다. 더 이상 게임을 할 수 없다.</div>` : "") + esc(mine.why) + (notes ? `<div class="result-notes">${notes}</div>` : "");
     const list = Object.entries(results).map(([pid, x]) => ({ pid, loss: x.loss })).sort((a, b) => b.loss - a.loss);
     const pos = list.findIndex(x => x.pid === S.pid) + 1;
     $("class-pos").textContent = `이번 라운드에서 우리 반 ${list.length}명 중 ${pos}번째로 많이 잃었어요.`;
@@ -314,7 +339,8 @@
   function finalRanking(ss) {
     const last = {};
     for (let r = 0; r < ROUNDS; r++) { const res = ss.results && ss.results["r" + r]; if (!res) continue; Object.entries(res).forEach(([pid, x]) => { last[pid] = x; }); }
-    return Object.entries(last).map(([pid, x]) => ({ pid, nickname: x.nickname, charId: x.charId, state: x.state, score: E.score(x.state) })).sort((a, b) => b.score.total - a.score.total);
+    return Object.entries(last).map(([pid, x]) => ({ pid, nickname: x.nickname, charId: x.charId, state: x.state, dead: !!x.state.dead, score: E.score(x.state) }))
+      .sort((a, b) => (a.dead - b.dead) || (a.dead ? (b.state.deadRound - a.state.deadRound) : (b.score.total - a.score.total)));
   }
 
   // ================================================================
@@ -372,7 +398,7 @@
   }
 
   function openBoard(code) {
-    SOUND.mute(false); soundBtn.classList.remove("hidden");
+    SOUND.setRole("teacher"); paintSound();
     T.code = code; T.lastKey = null;
     try { localStorage.setItem("cg-teacher-code", code); } catch (e) { }
     $("b-code").textContent = code; $("big-code").textContent = code;
@@ -394,6 +420,7 @@
       if (T.lastCount !== undefined && T.players.length > T.lastCount) SOUND.sfx("join");
       T.lastCount = T.players.length;
       $("lobby-players").innerHTML = T.players.map(p => { const ch = charOf(p.charId); const st = latestState(ss, p.pid, p.charId); return `<div class="p-chip ${p.isBot ? "bot" : ""}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 캐릭터 보기"><div class="p-head">${avatar(ch)}<div style="min-width:0"><div class="p-nick">${esc(p.nickname)}</div><div class="p-char">${ch.name}</div></div></div><div class="stats stats-chip">${statsHTML(st, true)}</div></div>`; }).join("") || `<p class="hint">아직 참가한 학생이 없습니다.</p>`;
+      $("lobby-count").textContent = T.players.length ? `${T.players.length}명` : "";
       $("btn-start-round").disabled = T.players.length === 0;
       $("b-rejoin").classList.add("hidden");
       showStep(root, "b-step-lobby");
@@ -405,7 +432,7 @@
       const cat = DIS_CAT[sc.id] || "social";
       SOUND.bgm(SOUND.bgmFor(cat));
       if (T.lastKey !== key) {
-        closePlayerModal();
+        closePlayerModal(); closeDeath();
         SOUND.sfx(SOUND.sfxFor(cat));
         $("b-disaster-where").textContent = sc.where; $("b-disaster-title").textContent = sc.title; $("b-disaster-story").textContent = sc.story;
         $("b-disaster-img").innerHTML = disasterImg(sc);
@@ -440,7 +467,7 @@
     } else if (ss.phase === "final") {
       $("b-rejoin").classList.remove("hidden");
       SOUND.bgm("final");
-      if (T.lastKey !== "final") { closePlayerModal(); SOUND.sfx("fanfare"); }
+      if (T.lastKey !== "final") { closePlayerModal(); closeDeath(); SOUND.sfx("fanfare"); }
       T.lastKey = "final";
       renderFinalBoard(ss);
       showStep(root, "b-step-final");
@@ -477,8 +504,8 @@
         choice = p.isBot ? open[Math.floor(Math.random() * open.length)].index : (open[0] ? open[0].index : 0);
         substituted = !p.isBot;
       }
-      const { state, result } = E.applyRound(ch, st, sc, choice);
-      roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: substituted || result.substituted, dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state };
+      const { state, result } = E.applyRound(ch, st, sc, choice, { round: r });
+      roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: !result.skipped && (substituted || result.substituted), dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state, notes: result.notes || [], dead: !!state.dead, deadRound: state.deadRound ?? null, deadWhy: state.deadWhy || null, skipped: !!result.skipped };
     });
     results["r" + r] = roundRes;
     $("btn-reveal").disabled = true;
@@ -496,7 +523,8 @@
     $("btn-next-round").textContent = r >= ROUNDS - 1 ? "최종 결과 보기" : `${r + 2}라운드 시작`;
     $("b-ineq").innerHTML = ineqHTML(res, ss);
     let list = Object.entries(res).map(([pid, x]) => Object.assign({ pid, score: E.score(x.state).total }, x));
-    const worstPid = list.slice().sort((a, b) => b.loss - a.loss)[0]?.pid, bestPid = list.slice().sort((a, b) => a.loss - b.loss)[0]?.pid;
+    const alive = list.filter(x => !x.skipped);
+    const worstPid = alive.slice().sort((a, b) => b.loss - a.loss)[0]?.pid, bestPid = alive.slice().sort((a, b) => a.loss - b.loss)[0]?.pid;
     if (T.sort === "loss") list.sort((a, b) => b.loss - a.loss);
     else if (T.sort === "score") list.sort((a, b) => b.score - a.score);
     else list.sort((a, b) => a.charId - b.charId || b.loss - a.loss);
@@ -509,9 +537,9 @@
         const pct = n => Math.min(100, Math.max(0, n / max * 100)), d = v - pv;
         return `<div class="b-g"><span class="b-g-ico">${icon}</span><div class="b-bar">${d !== 0 ? `<i class="ghost ${d < 0 ? "lost" : ""}" style="width:${pct(pv)}%"></i>` : ""}<i class="fill" style="width:${pct(animate ? pv : v)}%;background:${color}" data-to="${pct(v)}"></i></div><span class="b-g-num"><b data-from="${animate ? pv : v}" data-to="${v}">${animate ? pv : v}</b><small class="${d < 0 ? "neg" : d > 0 ? "pos" : ""}">${d === 0 ? "" : sign(d)}</small></span></div>`;
       };
-      html += `<div class="bcard ${x.pid === worstPid ? "worst" : x.pid === bestPid ? "best" : ""}" style="border-top-color:${ch.color}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">
+      html += `<div class="bcard ${x.pid === worstPid ? "worst" : x.pid === bestPid ? "best" : ""} ${x.dead ? "dead" : ""}" style="border-top-color:${ch.color}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">
         <div class="b-top">${avatar(ch)}<div style="min-width:0"><div class="b-nick">${esc(x.nickname)}${x.isBot ? "🤖" : ""}</div><div class="b-char">${ch.name}</div></div></div>
-        <div class="b-choice"><span class="opt-no pick-${x.choice}">${choiceLabel(x.choice)}</span>${x.text}</div>
+        <div class="b-choice">${x.skipped ? `💀 ${x.deadRound + 1}라운드 사망` : `<span class="opt-no pick-${x.choice}">${choiceLabel(x.choice)}</span>${x.text}`}</div>
         <div class="b-gauges">${g("💰", x.state.money, prev.money, MAX_MONEY, "var(--money)")}${g("❤️", x.state.body, prev.body, 100, "var(--body)")}${g("💙", x.state.mind, prev.mind, 100, "var(--mind)")}</div>
         <div class="b-score">누적 ${x.score}점</div></div>`;
     });
@@ -529,9 +557,24 @@
         animateGauges($("board-grid"), 50, 2600);
         const sum = list.reduce((a, x) => a + x.dm + x.db + x.ds, 0);
         SOUND.sfx(sum < 0 ? "drain" : "rise");
+        // 이번 라운드에 세상을 떠난 캐릭터가 있으면 게이지가 다 움직인 뒤 전체 안내
+        const died = list.filter(x => x.dead && x.deadRound === r);
+        if (died.length) T.deathTimer = setTimeout(() => showDeath(died, r), 3000);
       }, 1000);
     }
   }
+  // 사망 안내 (전자칠판 전체 화면 + 슬픈 BGM). 확인을 누르면 닫히고 결과 BGM으로 돌아감
+  function showDeath(died, r) {
+    const ov = $("death-overlay");
+    $("death-img").innerHTML = `<img src="${imgSrc("images/announce.png")}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'death-emoji',textContent:'🕯️'}))">`;
+    $("death-title").textContent = died.length === 1 ? `${charOf(died[0].charId).name}이(가) 세상을 떠났습니다` : `${died.length}명이 세상을 떠났습니다`;
+    $("death-list").innerHTML = died.map(x => { const ch = charOf(x.charId); return `<div class="death-row">${avatar(ch, 56)}<div><b>${ch.name}</b> <small>${esc(x.nickname)}${x.isBot ? " 🤖" : ""} · ${ch.place}</small><div class="death-why">${r + 1}라운드, ${x.deadWhy} 세상을 떠났습니다.</div></div></div>`; }).join("");
+    $("death-text").textContent = "같은 재난을 겪었지만 몸을 지킬 돈도, 치료받을 병원도 충분하지 않았습니다. 이 캐릭터는 더 이상 게임을 할 수 없고, 남은 라운드는 친구들의 결과를 지켜봅니다.";
+    ov.classList.remove("hidden");
+    SOUND.bgm("mourn");
+  }
+  function closeDeath() { if (T.deathTimer) { clearTimeout(T.deathTimer); T.deathTimer = null; } const ov = $("death-overlay"); if (ov && !ov.classList.contains("hidden")) { ov.classList.add("hidden"); if (T.session && T.session.phase === "reveal") SOUND.bgm("reveal"); } }
+  $("btn-death-close").onclick = closeDeath;
   // 대기실 참가자 모달
   function openPlayerModal(pid) {
     const p = T.players.find(x => x.pid === pid); if (!p || !T.session) return;
@@ -576,25 +619,32 @@
   let finalByChar = false;
   function renderFinalBoard(ss) {
     const ranking = finalRanking(ss);
-    const DEVELOPED = [1, 2, 3, 4, 5, 6, 7, 8];
-    const avg = f => { const arr = ranking.filter(x => f(charOf(x.charId))); return arr.length ? Math.round(arr.reduce((s, x) => s + x.score.total, 0) / arr.length) : "-"; };
-    const groups = [
-      ["선진국", c => DEVELOPED.includes(c.id), "개발도상국·난민", c => !DEVELOPED.includes(c.id)],
-      ["시작 재산 100 이상", c => c.money >= 100, "시작 재산 100 미만", c => c.money < 100],
-      ["장애 없음", c => !c.tags.includes("disability"), "장애 있음", c => c.tags.includes("disability")],
-      ["남", c => c.sex === "남", "여", c => c.sex === "여"],
-      ["보험 있음", c => c.ins === 1, "보험 없음", c => c.ins === 0],
-      ["어른(18세 이상)", c => c.age >= 18, "아동·청소년", c => c.age < 18],
-    ];
-    $("group-avg").innerHTML = `<div class="label">조건별 평균 점수 (${ranking.length}명)</div>` + groups.map(g => `<div class="ga-row"><span>${g[0]}</span><b>${avg(g[1])}</b><span>${g[2]}</span><b>${avg(g[3])}</b></div>`).join("");
+    const crown = i => (i === 0 ? `<span class="crown">👑</span>` : "");
     if (finalByChar) {
-      const byChar = CHARACTERS.map(ch => { const arr = ranking.filter(x => x.charId === ch.id); return { ch, n: arr.length, avg: arr.length ? Math.round(arr.reduce((s, x) => s + x.score.total, 0) / arr.length) : null }; }).filter(x => x.n).sort((a, b) => b.avg - a.avg);
-      $("rank-list").innerHTML = byChar.map((x, i) => `<div class="rank-row ${i < 3 ? "top3" : ""}" data-pid="${ranking.find(r => r.charId === x.ch.id).pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${i + 1}</span>${avatar(x.ch)}<span class="r-nick">${x.ch.name}</span><span class="r-char">${x.n}명</span><span class="r-score">${x.avg}</span></div>`).join("");
+      const byChar = CHARACTERS.map(ch => { const arr = ranking.filter(x => x.charId === ch.id && !x.dead); const deadN = ranking.filter(x => x.charId === ch.id && x.dead).length; return { ch, n: arr.length + deadN, deadN, avg: arr.length ? Math.round(arr.reduce((s, x) => s + x.score.total, 0) / arr.length) : -1 }; }).filter(x => x.n).sort((a, b) => b.avg - a.avg);
+      $("rank-list").innerHTML = byChar.map((x, i) => `<div class="rank-row ${i === 0 ? "first" : i < 3 ? "top3" : ""} ${x.avg < 0 ? "dead" : ""}" data-pid="${ranking.find(r => r.charId === x.ch.id).pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${crown(i)}${i + 1}</span>${avatar(x.ch)}<span class="r-nick">${x.ch.name}</span><span class="r-char">${x.n}명${x.deadN ? ` · 💀${x.deadN}` : ""}</span><span class="r-score">${x.avg < 0 ? "💀" : x.avg}</span></div>`).join("");
       $("btn-final-sort-char").textContent = "학생별 순위 보기";
     } else {
-      $("rank-list").innerHTML = ranking.map((x, i) => { const ch = charOf(x.charId); return `<div class="rank-row ${i < 3 ? "top3" : ""}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${i + 1}</span>${avatar(ch)}<span class="r-nick">${esc(x.nickname)}</span><span class="r-char">${ch.name}</span><span class="r-score">${x.score.total}</span></div>`; }).join("");
+      $("rank-list").innerHTML = ranking.map((x, i) => { const ch = charOf(x.charId); return `<div class="rank-row ${i === 0 ? "first" : i < 3 ? "top3" : ""} ${x.dead ? "dead" : ""}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${crown(i)}${i + 1}</span>${avatar(ch)}<span class="r-nick">${esc(x.nickname)}</span><span class="r-char">${ch.name}${x.dead ? ` · 💀 ${x.state.deadRound + 1}라운드 사망` : ""}</span><span class="r-score">${x.dead ? "💀" : x.score.total}</span></div>`; }).join("");
       $("btn-final-sort-char").textContent = "캐릭터별 평균 보기";
     }
+    renderCounterfactual(ss, ranking);
+  }
+  // 1등이 사회적 약자(여성·노인·장애인·낙후 지역)라면: 그 조건이 없었다면 같은 선택으로 얼마나 더 얻었을지 보여 줌
+  function renderCounterfactual(ss, ranking) {
+    const box = $("cf-box"); const top = ranking[0];
+    if (!top || top.dead) { box.classList.add("hidden"); return; }
+    const ch = charOf(top.charId);
+    const choices = []; for (let i = 0; i < ROUNDS; i++) { const x = ss.results && ss.results["r" + i] && ss.results["r" + i][top.pid]; choices.push(x ? x.choice : 0); }
+    const cf = E.counterfactual(ch, ss.scenarioIds.map(scenarioOf), choices);
+    if (!cf) { box.classList.add("hidden"); return; }
+    const dMoney = cf.cf.state.money - cf.actual.state.money, dTotal = cf.cf.score.total - cf.actual.score.total;
+    const labels = cf.vuls.map(v => v.label).join("·"), cfs = cf.vuls.map(v => v.cf).join(" ");
+    box.innerHTML = `<div class="label">만약에</div><div class="cf-head">👑 1등 ${esc(top.nickname)} (${ch.name})은(는) <b>${labels}</b>입니다.</div>
+      <div class="cf-line">${cfs}, 같은 선택으로 10라운드를 거쳤다면</div>
+      <div class="cf-nums"><div><small>💰 재산</small><b>${sign(dMoney)}</b><span>코인 더</span></div><div><small>총점</small><b>${sign(dTotal)}</b><span>점 더</span></div></div>
+      <div class="cf-foot">실제 ${cf.actual.state.money}코인 · ${cf.actual.score.total}점 → ${cfs.split(" ")[0]} ${cf.cf.state.money}코인 · ${cf.cf.score.total}점 (운 요소 제외)</div>`;
+    box.classList.remove("hidden");
   }
   $("btn-final-sort-char").onclick = () => { finalByChar = !finalByChar; renderFinalBoard(T.session); };
 
@@ -607,7 +657,6 @@
   async function refreshReflections() {
     $("teacher-tbody").innerHTML = `<tr><td colspan="6">불러오는 중...</td></tr>`;
     try { const q = await reflectionsRef().get(); rows = q.docs.map(d => d.data()); } catch (e) { $("teacher-tbody").innerHTML = `<tr><td colspan="6">불러오기 실패</td></tr>`; return; }
-    $("reflections-note").textContent = T.code ? `수업 코드 ${T.code}의 소감만 표시합니다.` : "모든 수업의 소감을 표시합니다.";
     if (T.code) rows = rows.filter(r => r.code === T.code);
     renderReflections();
   }
@@ -620,7 +669,7 @@
   const fmtTime = iso => { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); };
   function renderReflections() {
     const arr = sortedRows();
-    $("teacher-count").textContent = `(${arr.length}명)`;
+    $("teacher-count").textContent = `(${arr.length}명${T.code ? ` · 수업 ${T.code}` : ""})`;
     $("teacher-tbody").innerHTML = arr.length ? arr.map(r => `<tr><td><b>${esc(r.nickname)}</b></td><td>${esc(r.character)}</td><td>${r.score}</td><td>${esc(r.code)}</td><td>${fmtTime(r.submitted_at)}</td><td class="refl">${esc(r.reflection)}${r.debrief ? `<div class="hint" style="margin-top:4px">생각 정리: ${esc(r.debrief)}</div>` : ""}</td></tr>`).join("") : `<tr><td colspan="6">아직 제출된 소감이 없습니다.</td></tr>`;
   }
   $("sort-select").onchange = renderReflections;
@@ -629,7 +678,7 @@
   async function saveFile(filename, blob) {
     let dl = null;
     try { if (window.claude && window.claude.use) dl = await window.claude.use("downloads"); } catch (e) { dl = null; }
-    if (dl) { try { await dl.save({ filename, data: blob }); } catch (e) { if (e && e.code !== "declined") $("reflections-note").textContent = "저장할 수 없습니다: " + (e.message || e.code); } return; }
+    if (dl) { try { await dl.save({ filename, data: blob }); } catch (e) { if (e && e.code !== "declined") showToast("저장할 수 없습니다: " + (e.message || e.code)); } return; }
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
@@ -657,20 +706,22 @@
 
     // 1. QR코드 파라미터로 접속한 경우
     if (queryCode && /^\d{4}$/.test(queryCode)) {
-      // 이미 같은 세션에 참가 중이었다면 바로 학생 화면으로 복구
-      if (savedCode === queryCode) {
+      // 이미 같은 세션에 참가 중이었다면(같은 탭, 또는 같은 기기에서 튕겼다 다시 들어온 경우) 바로 학생 화면으로 복구
+      let remembered = null; try { remembered = localStorage.getItem(pidKey(queryCode)); } catch (e) { }
+      const tryPid = savedCode === queryCode ? S.pid : remembered;
+      if (tryPid) {
         const s = await sessionRef(queryCode).get();
-        const p = await playersRef(queryCode).doc(S.pid).get();
+        const p = await playersRef(queryCode).doc(tryPid).get();
         if (s.exists && p.exists) {
-          S.code = queryCode;
+          S.pid = tryPid; S.code = queryCode;
+          try { sessionStorage.setItem("cg-code", queryCode); } catch (e) { }
+          rememberPid(queryCode);
           startStudent();
           return;
         }
       }
       // 새 참가이거나 세션이 없으면 참가 폼에 코드 자동 입력 후 닉네임 입력 대기
       $("input-code").value = queryCode;
-      const notice = $("qr-join-notice");
-      if (notice) notice.classList.remove("hidden");
       show("screen-join");
       setTimeout(() => {
         const nick = $("input-nickname");

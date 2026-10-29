@@ -9,9 +9,14 @@
 // ============================================================
 (function (root) {
   let ctx = null, master = null, bgmGain = null, sfxGain = null;
-  let enabled = true;
-  try { enabled = localStorage.getItem("cg-sound") !== "off"; } catch (e) {}
-  let muted = false;    // true면 소리 기능 자체를 쓰지 않음 (학생 기기)
+  // 역할별 켜짐 기본값: 교사(전자칠판) 켜짐, 학생 기기 꺼짐. 둘 다 버튼으로 바꿀 수 있고 기억된다.
+  let role = "teacher";
+  const KEY = r => (r === "student" ? "cg-sound-s" : "cg-sound-t");
+  const loadEnabled = r => { try { const v = localStorage.getItem(KEY(r)); if (v === "on") return true; if (v === "off") return false; } catch (e) {} return r !== "student"; };
+  let enabled = loadEnabled(role);
+  let volume = 0.8;     // 0~1 (볼륨 슬라이더)
+  try { const v = parseFloat(localStorage.getItem("cg-vol")); if (!isNaN(v)) volume = Math.min(1, Math.max(0, v)); } catch (e) {}
+  let muted = false;    // true면 소리 기능 자체를 쓰지 않음
   let current = null;   // 현재 BGM 이름
   let bgmTimer = null;  // 스케줄러
   let bgmNodes = [];
@@ -22,7 +27,7 @@
     const AC = root.AudioContext || root.webkitAudioContext;
     if (!AC) return false;
     ctx = new AC();
-    master = ctx.createGain(); master.gain.value = enabled ? 1 : 0; master.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = enabled ? volume : 0; master.connect(ctx.destination);
     bgmGain = ctx.createGain(); bgmGain.gain.value = 0.16; bgmGain.connect(master);
     sfxGain = ctx.createGain(); sfxGain.gain.value = 0.5; sfxGain.connect(master);
     return true;
@@ -104,6 +109,14 @@
       if (i % 4 === 0) tone(bgmGain, f(bass[(i / 4) | 0]), t, s * 3.5, "triangle", 0.5, 0.02, 0.1);
       if (i % 4 === 0) kick(bgmGain, t, 0.5);
       if (i % 4 === 2) noise(bgmGain, t, 0.06, 0.14, 4000);
+    } },
+    mourn: { bpm: 60, steps: 32, play(i, t, s) {
+      // 슬픈 분위기: 느린 단조 화음 + 성긴 높은 음 + 긴 베이스
+      const chords = [["A3", "C4", "E4"], ["F3", "A3", "C4"], ["D3", "F3", "A3"], ["E3", "G#3", "B3"]];
+      if (i % 8 === 0) chords[(i / 8) | 0].forEach(n => tone(bgmGain, f(n), t, s * 7.8, "sine", 0.28, 0.6, 1.2));
+      const mel = ["E5", null, null, null, null, null, "C5", null, "A4", null, null, null, null, null, null, null, "F5", null, null, null, null, null, "E5", null, "D5", null, null, null, "B4", null, null, null];
+      if (mel[i]) tone(bgmGain, f(mel[i]), t, s * 5, "triangle", 0.16, 0.15, 1.5);
+      if (i % 16 === 0) tone(bgmGain, f(["A2", "F2", "D2", "E2"][(i / 8) | 0]), t, s * 15, "sine", 0.4, 0.3, 1.0);
     } },
     // ---- 재난 유형별 선택 BGM ----
     choose_heat: { bpm: 120, steps: 32, play(i, t, s) {
@@ -198,14 +211,17 @@
   const sfxFor = cat => CAT_SFX[cat] || "disaster";
   function sfx(name) { if (muted || !ensure() || !enabled) return; try { SFX[name] && SFX[name](); } catch (e) {} }
 
+  function applyGain() { if (master && ctx) master.gain.setTargetAtTime(enabled && !muted ? volume : 0, ctx.currentTime, 0.05); }
   function setEnabled(on) {
     enabled = on;
-    try { localStorage.setItem("cg-sound", on ? "on" : "off"); } catch (e) {}
-    if (master) master.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.05);
+    try { localStorage.setItem(KEY(role), on ? "on" : "off"); } catch (e) {}
+    applyGain();
     if (on && ctx && current && !bgmTimer) startBgm(current);
   }
   function toggle() { setEnabled(!enabled); return enabled; }
-  function mute(on) { muted = on; if (on) { current = null; stopBgm(); if (master) master.gain.setTargetAtTime(0, ctx.currentTime, 0.02); } else if (master) master.gain.setTargetAtTime(enabled ? 1 : 0, ctx.currentTime, 0.02); }
+  function setVolume(v) { volume = Math.min(1, Math.max(0, +v || 0)); try { localStorage.setItem("cg-vol", String(volume)); } catch (e) {} applyGain(); }
+  function setRole(r) { role = r; enabled = loadEnabled(r); muted = false; applyGain(); if (enabled && ctx && current && !bgmTimer) startBgm(current); }
+  function mute(on) { muted = on; if (on) { current = null; stopBgm(); } applyGain(); }
 
-  root.SOUND = { bgm, sfx, bgmFor, sfxFor, toggle, setEnabled, mute, get enabled() { return enabled; } };
+  root.SOUND = { bgm, sfx, bgmFor, sfxFor, toggle, setEnabled, setVolume, setRole, mute, get enabled() { return enabled; }, get volume() { return volume; } };
 })(window);

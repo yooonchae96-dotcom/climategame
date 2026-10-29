@@ -151,7 +151,7 @@ const SCENARIOS = [
       { text: "배를 타고 바다로 나간다", lock: c => LOCK(c, !has(c, "boat"), "배가 없다"),
         effect: c => R(-Math.round(c.money * 0.3), -20, -20, "거센 파도 속에서 밤을 보냈다. 배가 부서졌다.") },
       { text: "지붕 위로 올라간다", lock: c => LOCK(c, c.mob === 0, "휠체어로는 지붕에 오를 수 없다"),
-        effect: c => has(c, "highrise") || has(c, "wealthy") ? R(0, 0, 0, "높은 건물이라 물이 닿지 않았다.")
+        effect: c => has(c, "highrise") || has(c, "wealthy") ? R(-5, -5, 0, "높은 건물이라 물은 닿지 않았지만, 지붕에서 비를 맞고 감기에 걸렸다.")
           : has(c, "elderly") ? R(-Math.round(c.money * 0.4), -35, -20, "지붕에서 밤새 비를 맞았다. 체온이 떨어졌다.")
           : R(-Math.round(c.money * 0.4), -25, -20, "지붕 위에서 구조를 기다렸다. 집 안 물건은 다 떠내려갔다.") },
     ] },
@@ -237,10 +237,9 @@ const SCENARIOS = [
       { text: "남아서 둑을 쌓는다", lock: () => null,
         effect: c => has(c, "island") || has(c, "coast") ? R(-Math.round(c.money * 0.5), -20, -20, "둑을 쌓았지만 다음 밀물에 무너졌다.")
           : R(-5, -5, 0, "너의 집에는 바닷물이 오지 않았다.") },
-      { text: "더 높은 곳으로 옮긴다", lock: () => null,
+      { text: "더 높은 곳으로 옮긴다", lock: c => LOCK(c, !has(c, "island") && !has(c, "coast") && !has(c, "lowland"), "이미 높은 곳에 살아 옮길 필요가 없다"),
         effect: c => has(c, "island") ? R(-Math.round(c.money * 0.6), -10, -25, "섬에서 가장 높은 곳으로 갔지만 그곳도 안전하지 않다.")
-          : has(c, "coast") || has(c, "lowland") ? R(-Math.round(c.money * 0.5), -10, -15, "집을 옮기느라 가진 돈을 거의 썼다.")
-          : R(0, 0, 0, "이미 높은 곳에 살고 있다.") },
+          : R(-Math.round(c.money * 0.5), -10, -15, "집을 옮기느라 가진 돈을 거의 썼다.") },
     ] },
 
   // ---------- 8 홍수 뒤 전염병 ----------
@@ -277,7 +276,7 @@ const SCENARIOS = [
       : "춥지만 난방 기구를 살 수 있다.",
     options: [
       { text: "난방 기구를 산다", lock: c => LOCK(c, c.money < 40, "난방 기구를 살 돈이 없다"),
-        effect: c => c.id === 1 ? R(0, 0, 0, "자가 발전기 덕분에 정전을 겪지 않았다.")
+        effect: c => c.id === 1 ? R(-40, 0, 3, "자가 발전기가 있어 필요 없었지만 예비로 하나 더 샀다. 든든했다.")
           : R(-40, 0, 0, "난방 기구로 따뜻하게 지냈다.") },
       { text: "이웃·공공시설로 간다", lock: () => null,
         effect: c => c.mob === 0 ? R(0, -20, -15, "눈 쌓인 길을 휠체어로 갈 수 없어 집에 갇혔다.")
@@ -285,7 +284,7 @@ const SCENARIOS = [
           : has(c, "camp") || has(c, "slum") ? R(0, -15, -10, "공공시설이 가득 차 들어가지 못했다.")
           : R(-5, -5, 0, "온열 쉼터에서 지냈다.") },
       { text: "집에서 담요로 버틴다", lock: () => null,
-        effect: c => c.id === 1 ? R(0, 0, 0, "자가 발전기 덕분에 정전을 겪지 않았다.")
+        effect: c => c.id === 1 ? R(-5, 0, 0, "자가 발전기 연료를 더 샀다. 정전은 느끼지도 못했다.")
           : has(c, "elderly") ? R(-10, -35, -10, "저체온증이 왔다. 이웃이 발견해 겨우 살았다.")
           : has(c, "camp") ? R(0, -30, -15, "천막 안에서 동생들과 얼어붙은 밤을 보냈다.")
           : c.money >= 100 ? R(-20, -10, 0, "수도관이 터졌지만 수리비를 바로 냈다.")
@@ -328,13 +327,13 @@ const SCENARIOS = [
           : c.car ? R(-5, 0, 0, "차로 빨리 높은 곳에 갔다.")
           : R(-5, -5, 0, "걸어서 고지대로 피했다.") },
       { text: "2층 이상 건물로 올라간다", lock: c => LOCK(c, c.mob === 0, "휠체어로 계단을 오를 수 없다"),
-        effect: c => has(c, "highrise") || has(c, "wealthy") ? R(0, 0, 0, "집 자체가 높아서 아무 일도 없었다.")
+        effect: c => has(c, "highrise") || has(c, "wealthy") ? R(-5, 0, 0, "집 자체가 높아 피해는 없었다. 비상식량을 사 두느라 조금 썼다.")
           : has(c, "deaf") ? R(-c.money, -30, -20, "이웃이 알려 줘 뒤늦게 올라갔다. 이미 허리까지 물이 찼었다.")
           : has(c, "slum") || has(c, "lowland") ? R(-Math.round(c.money * 0.5), -15, -10, "이웃 건물 2층에서 밤을 보냈다. 집은 잠겼다.")
           : R(-5, 0, 0, "안전하게 기다렸다.") },
       { text: "집에 남아 짐을 지킨다", lock: () => null,
         effect: c => has(c, "slum") || has(c, "lowland") || has(c, "camp") ? R(-Math.round(c.money * 0.3), -35, -20, "물이 지붕까지 차 구조를 기다렸다.")
-          : has(c, "highrise") || has(c, "wealthy") ? R(0, 0, 0, "집에 물이 오지 않았다.")
+          : has(c, "highrise") || has(c, "wealthy") ? R(-10, 0, 0, "집에 물은 오지 않았지만 지하 주차장의 차를 손봐야 했다.")
           : R(-10, -10, -5, "지하실이 잠겨 물건이 젖었다.") },
     ] },
 
@@ -368,9 +367,9 @@ const SCENARIOS = [
       : "너의 가족 수입이 줄었다.",
     options: [
       { text: "쉬고 임금을 포기한다", lock: () => null,
-        effect: c => has(c, "employer") ? R(0, 0, 0, "너의 가문은 임금을 주지 않아 오히려 비용이 줄었다.")
+        effect: c => has(c, "employer") ? R(15, 0, -5, "너의 가문은 임금을 주지 않아 비용이 줄었다. 노동자들의 원망을 들었다.")
           : has(c, "outdoor") ? R(-Math.round(c.money * 0.6), -5, -15, "며칠 수입이 끊겨 먹을 것을 줄였다.")
-          : c.money >= 100 ? R(0, 0, 0, "너와 상관없는 일이었다.")
+          : c.money >= 100 ? R(0, 0, -3, "뉴스로 쓰러진 노동자 소식을 보고 마음이 무거웠다.")
           : R(-Math.round(c.money * 0.2), 0, -5, "가족 수입이 줄었다.") },
       { text: "몰래 일한다", lock: () => null,
         effect: c => has(c, "outdoor") ? R(5, -40, -10, "일당은 받았지만 아빠(혹은 너)가 현장에서 쓰러졌다.")
@@ -399,7 +398,7 @@ const SCENARIOS = [
           : c.money >= 100 ? R(-10, 0, 0, "평소처럼 장을 봤다.")
           : R(-Math.round(c.money * 0.5), 0, -5, "식량값에 돈 절반이 들어갔다.") },
       { text: "정부 지원을 기다린다", lock: () => null,
-        effect: c => c.aid >= 3 ? R(0, 0, 0, "지원이 필요 없었다.")
+        effect: c => c.aid >= 3 ? R(0, 0, -3, "지원이 필요 없었다. 뉴스 속 굶는 마을을 보며 마음이 무거웠다.")
           : has(c, "indigenous") ? R(0, -25, -20, "지원은 오지 않았다. 굶으며 기다렸다.")
           : R(0, -10, -10, "지원이 늦게 조금 왔다.") },
     ] },
@@ -416,10 +415,10 @@ const SCENARIOS = [
         effect: c => has(c, "forest") ? R(-Math.round(c.money * 0.3), -15, -30, "항의하는 마을 사람들이 위협을 받았다. 삼촌이 다쳤다.")
           : has(c, "pastoral") ? R(-5, -10, -20, "울타리 앞에서 쫓겨났다.")
           : has(c, "wealthy") ? R(0, 0, 5, "온라인 서명 운동에 참여했다.")
-          : R(0, 0, 0, "멀리서 응원했다.") },
+          : R(-3, 0, 3, "후원금을 조금 보냈다. 마음은 조금 나아졌다.") },
       { text: "도시로 떠난다", lock: () => null,
         effect: c => has(c, "forest") || has(c, "pastoral") ? R(-Math.round(c.money * 0.5), -15, -30, "도시 빈민가로 갔다. 말도 일자리도 낯설었다.")
-          : R(0, 0, 0, "이미 도시에 살고 있다.") },
+          : R(-5, 0, 0, "이미 도시에 산다. 숲을 태워 만든 농장의 값싼 고기를 사 먹었다.") },
       { text: "기업의 보상금을 받고 땅을 넘긴다", lock: c => LOCK(c, !has(c, "forest") && !has(c, "pastoral"), "넘길 땅이 없다"),
         effect: c => R(Math.round(c.money * 0.5), -5, -35, "보상금은 시세의 10분의 1이었다. 숲과 함께 삶의 방식을 잃었다.") },
     ] },
@@ -444,7 +443,7 @@ const SCENARIOS = [
           : has(c, "child") ? R(0, -10, -15, "어른들 틈에서 밀려 조금밖에 못 받았다.")
           : R(0, -5, -5, "식량을 조금 받았다.") },
       { text: "안전한 지역으로 피한다", lock: c => LOCK(c, c.money < 50 && c.mob < 2, "갈 수단도 돈도 없다"),
-        effect: c => c.id === 1 ? R(0, 0, 0, "경비가 있는 저택이라 피할 필요가 없었다.")
+        effect: c => c.id === 1 ? R(-50, 0, 0, "경비가 있는 저택이지만 가족을 교외 별장으로 보냈다.")
           : R(-50, 0, 0, "교외 호텔에서 며칠 지냈다.") },
     ] },
 
@@ -461,7 +460,7 @@ const SCENARIOS = [
       { text: "일을 해서 가족을 돕는다", lock: () => null,
         effect: c => has(c, "child") && has(c, "outdoor") ? R(5, -20, -10, "공사장에서 일했다. 손을 다쳤다.")
           : has(c, "child") ? R(3, -10, -15, "어린 나이에 일을 시작했다. 공부는 멀어졌다.")
-          : has(c, "elderly") ? R(0, 0, 0, "너는 이미 은퇴했다.")
+          : has(c, "elderly") ? R(5, -5, 0, "은퇴했지만 동네 아이들을 가르치고 수고비를 받았다. 몸은 조금 고됐다.")
           : R(5, -5, 0, "아르바이트를 했다.") },
       { text: "학교가 열릴 때까지 기다린다", lock: () => null,
         effect: c => has(c, "female") && has(c, "child") && c.viol >= 3 ? R(0, -5, -30, "조혼 압박이 시작됐다. 매일 불안하다.")
@@ -500,9 +499,8 @@ const SCENARIOS = [
     options: [
       { text: "농작물 재해 보험금을 받는다", lock: c => LOCK(c, !c.ins, "보험에 들지 않았다"),
         effect: c => R(20, 0, 0, "보험금으로 손해를 메웠다.") },
-      { text: "빚을 내어 다시 심는다", lock: c => LOCK(c, has(c, "elderly") && poorish(c), "82세라 대출이 거절됐다"),
-        effect: c => has(c, "farmer") ? R(-Math.round(c.money * 0.5), -10, -15, "빚을 냈지만 다음 수확까지 버틸 수 있을지 모른다.")
-          : R(0, 0, 0, "너는 농사를 짓지 않는다.") },
+      { text: "빚을 내어 다시 심는다", lock: c => LOCK(c, !has(c, "farmer") ? true : has(c, "elderly") && poorish(c), !has(c, "farmer") ? "농사를 짓지 않아 해당 없다" : "82세라 대출이 거절됐다"),
+        effect: c => R(-Math.round(c.money * 0.5), -10, -15, "빚을 냈지만 다음 수확까지 버틸 수 있을지 모른다.") },
       { text: "농사를 접는다", lock: () => null,
         effect: c => has(c, "farmer") ? R(-Math.round(c.money * 0.7), -10, -30, "평생 하던 농사를 접었다. 수입이 없어졌다.")
           : has(c, "pastoral") ? R(-Math.round(c.money * 0.5), -10, -20, "가축을 헐값에 팔았다.")
