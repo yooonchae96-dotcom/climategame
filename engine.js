@@ -108,7 +108,11 @@
     next.body = clamp(st.body + db + sx.b, 0, 100);
     next.mind = clamp(st.mind + ds + sx.s, 0, 100);
     let dead = false, deadWhy = null, rec = 0;
-    if (round >= SAFE_ROUNDS && ch.age >= ELDERLY_RISK_AGE && EXTREME_TEMP[sc.id]) {
+    // 희귀 시나리오의 치명 규칙(sc.fatal): 8라운드부터 해당 캐릭터는 남은 게이지와 상관없이 사망
+    const fatalWhy = round >= SAFE_ROUNDS && typeof sc.fatal === "function" ? sc.fatal(c) : null;
+    if (fatalWhy) {
+      dead = true; deadWhy = fatalWhy; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy;
+    } else if (round >= SAFE_ROUNDS && ch.age >= ELDERLY_RISK_AGE && EXTREME_TEMP[sc.id]) {
       dead = true; deadWhy = `${EXTREME_TEMP[sc.id]} 속에서 갑자기 고혈압이 악화되어`; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy;
     } else if (next.body <= 0) {
       if (round < SAFE_ROUNDS) next.body = 1;                       // 7라운드까지는 절대 죽지 않는다
@@ -140,9 +144,10 @@
     return { vuls, actual: run(ch, false), cf: run(counterfactualChar(ch), true) };
   }
 
-  // 최종 점수 = 재산 점수(시작 대비 남은 비율×100, 최대 100) + 몸 + 마음
+  // 최종 점수 = 남은 재산(코인 그대로) + 몸 + 마음
+  //   비율로 환산하지 않음 — 출발선의 불평등이 점수에 그대로 드러나게 하려는 의도
   function score(st) {
-    const moneyScore = st.start > 0 ? clamp(Math.round(st.money / st.start * 100), 0, 100) : 0;
+    const moneyScore = Math.max(0, Math.round(st.money));
     return { moneyScore, total: moneyScore + st.body + st.mind };
   }
 
@@ -172,13 +177,22 @@
   }
 
   // 시나리오 20개 중 무작위 10개
+  //   rare가 붙은 희귀 시나리오는 보통 뽑기에서 빠지고, 각자의 확률(rare)로만 끼어든다.
+  //   끼어들 때는 8라운드 이후(SAFE_ROUNDS부터) 자리 하나를 대신 차지한다 → 치명 규칙이 실제로 작동하는 구간.
   function drawScenarios(n) {
-    const arr = SCENARIOS.slice();
+    n = n || 10;
+    const arr = SCENARIOS.filter(s => !s.rare);
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return arr.slice(0, n || 10);
+    const picked = arr.slice(0, n);
+    if (n > SAFE_ROUNDS) {
+      SCENARIOS.filter(s => s.rare).forEach(s => {
+        if (Math.random() < s.rare) picked[SAFE_ROUNDS + Math.floor(Math.random() * (n - SAFE_ROUNDS))] = s;
+      });
+    }
+    return picked;
   }
 
   const ENGINE = { newState, optionStatus, resolveChoice, applyRound, score, lossOf, simulateAll, drawScenarios, clamp, vulnerabilities, structural, counterfactual, counterfactualChar, previewEffect, SAFE_ROUNDS, DEVELOPED };

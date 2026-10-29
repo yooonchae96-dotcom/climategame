@@ -7,7 +7,7 @@
   const E = window.ENGINE;
   const ROUNDS = 10;
   const PHASE_LABEL = { lobby: "대기실", choosing: "선택 중", reveal: "결과 공개", final: "최종 결과" };
-  const DIS_EMOJI = ["🌡️", "🌧️", "🌀", "⛺", "🏜️", "🔥", "🌊", "🦟", "❄️", "🧳", "🌪️", "🚰", "👷", "🧊", "🪓", "🍞", "🏫", "📄", "🌾", "🏛️"];
+  const DIS_EMOJI = ["🌡️", "🌧️", "🌀", "⛺", "🏜️", "🔥", "🌊", "🦟", "❄️", "🧳", "🌪️", "🚰", "👷", "🧊", "🪓", "🍞", "🏫", "📄", "🌾", "🏛️", "✊"];
   // 게이지 기준: 재산은 가장 부유한 캐릭터(500)가 꽉 찬 상태, 나머지는 그 비율. 몸·마음은 100 기준.
   const MAX_MONEY = Math.max(...CHARACTERS.map(c => c.money));
   // 재난 유형 (BGM·효과음 선택용): heat 폭염 / water 홍수·해수면 / storm 태풍·사이클론 / fire 산불 / cold 한파·얼음 / drought 가뭄 / social 대피소·난민·회의
@@ -648,7 +648,8 @@
     const cf = E.counterfactual(ch, ss.scenarioIds.map(scenarioOf), choices);
     if (!cf) { box.classList.add("hidden"); return; }
     const dMoney = cf.cf.state.money - cf.actual.state.money, dTotal = cf.cf.score.total - cf.actual.score.total;
-    const labels = cf.vuls.map(v => v.label).join("·"), cfs = cf.vuls.map(v => v.cf).join(" ");
+    // 조건이 여럿이면 마지막만 '~다면'으로 두고 앞은 '~고'로 잇는다 (예: "남성이고 젊었다면")
+    const labels = cf.vuls.map(v => v.label).join("·"), cfs = cf.vuls.map((v, i) => i < cf.vuls.length - 1 ? v.cf.replace("이었다면", "이고").replace("었다면", "고") : v.cf).join(" ");
     const cfShort = cf.vuls.map(v => v.cf.replace("이었다면", "").replace("었다면", "")).join("·");
     box.innerHTML = `<div class="cf-head">👑 1등 ${esc(top.nickname)} <small>(${ch.name} · ${labels})</small></div>
       <div class="cf-q">만약 ${cfs}?</div>
