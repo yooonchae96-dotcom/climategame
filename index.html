@@ -146,14 +146,15 @@
     <!-- ===== 교사: 진행 보드 ===== -->
     <section id="screen-board" class="screen">
       <header class="b-header">
+        <div class="b-rejoin hidden" id="b-rejoin" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr"></div></div>
         <div class="b-code">수업 코드 <b id="b-code"></b></div>
         <div class="b-phase" id="b-phase"></div>
         <div class="b-count" id="b-count"></div>
-        <div class="b-rejoin hidden" id="b-rejoin" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr"></div></div>
         <div class="b-tools">
           <button class="btn btn-sm btn-ghost" id="btn-b-reflections">소감</button>
           <button class="btn btn-sm btn-ghost" id="btn-b-exit">나가기</button>
         </div>
+        <div class="b-rejoin hidden" id="b-rejoin-right" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr-right"></div></div>
       </header>
       <div class="b-body">
         <!-- 대기실 -->
@@ -166,7 +167,6 @@
                 <div class="big-code" id="big-code"></div>
               </div>
               <div class="lobby-qr-card">
-                <div class="lobby-card-label">QR 스캔</div>
                 <div class="lobby-qrcode" id="lobby-qrcode"></div>
               </div>
               <div class="screen-foot">

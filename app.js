@@ -22,7 +22,10 @@
   muteBtn.onclick = () => { SOUND.toggle(); paintSound(); if (SOUND.enabled) SOUND.sfx("click"); };
   volRange.oninput = () => { SOUND.setVolume(volRange.value / 100); };
   volRange.onchange = () => { SOUND.sfx("click"); };
-  document.addEventListener("click", e => { if (!e.target.closest(".sound-ctl")) soundPanel.classList.add("hidden"); });
+  const closeSoundPanel = e => { if (!e || !e.target.closest(".sound-ctl")) soundPanel.classList.add("hidden"); };
+  document.addEventListener("pointerdown", closeSoundPanel, true);
+  document.addEventListener("touchstart", closeSoundPanel, { capture: true, passive: true });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeSoundPanel(); });
   document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && !b.closest(".sound-ctl") && !b.classList.contains("option")) SOUND.sfx("click"); }, true);
   // 토스트: data-tip이 있는 요소에 마우스를 올리거나 누르면 중요한 안내가 잠깐 뜬다
   const toastEl = $("toast"); let toastTimer = null, lastTip = null;
@@ -394,7 +397,7 @@
       }
     };
     draw($("lobby-qrcode"), 180);
-    draw($("b-rejoin-qr"), 76); // 헤더에 고정되는 작은 QR (라운드 중에도 재참가용)
+    draw($("b-rejoin-qr"), 76); draw($("b-rejoin-qr-right"), 76); // 헤더 양쪽에 고정되는 작은 QR (라운드 중에도 재참가용)
   }
 
   function openBoard(code) {
@@ -410,6 +413,7 @@
   }
   $("btn-b-exit").onclick = () => { if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP(); closePlayerModal(); show("screen-teacher-home"); };
 
+  const setRejoin = on => ["b-rejoin", "b-rejoin-right"].forEach(id => $(id).classList.toggle("hidden", !on));
   function renderBoard() {
     const ss = T.session; if (!ss) return;
     $("b-phase").textContent = ss.phase === "lobby" ? "대기실" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} 라운드 · ${PHASE_LABEL[ss.phase]}`;
@@ -422,11 +426,11 @@
       $("lobby-players").innerHTML = T.players.map(p => { const ch = charOf(p.charId); const st = latestState(ss, p.pid, p.charId); return `<div class="p-chip ${p.isBot ? "bot" : ""}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 캐릭터 보기"><div class="p-head">${avatar(ch)}<div style="min-width:0"><div class="p-nick">${esc(p.nickname)}</div><div class="p-char">${ch.name}</div></div></div><div class="stats stats-chip">${statsHTML(st, true)}</div></div>`; }).join("") || `<p class="hint">아직 참가한 학생이 없습니다.</p>`;
       $("lobby-count").textContent = T.players.length ? `${T.players.length}명` : "";
       $("btn-start-round").disabled = T.players.length === 0;
-      $("b-rejoin").classList.add("hidden");
+      setRejoin(false);
       showStep(root, "b-step-lobby");
       fitLobby();
     } else if (ss.phase === "choosing") {
-      $("b-rejoin").classList.remove("hidden");
+      setRejoin(true);
       const sc = scenarioOf(ss.scenarioIds[ss.round]);
       const key = "c" + ss.round;
       const cat = DIS_CAT[sc.id] || "social";
@@ -457,7 +461,7 @@
       showStep(root, "b-step-choosing");
       T.lastKey = key;
     } else if (ss.phase === "reveal") {
-      $("b-rejoin").classList.remove("hidden");
+      setRejoin(true);
       SOUND.bgm("reveal");
       const newRound = T.lastKey !== "v" + ss.round;
       if (newRound) { closePlayerModal(); SOUND.sfx("reveal"); renderRevealBoard(ss, true); }
@@ -465,7 +469,7 @@
       if (newRound) fitBoard();
       T.lastKey = "v" + ss.round;
     } else if (ss.phase === "final") {
-      $("b-rejoin").classList.remove("hidden");
+      setRejoin(true);
       SOUND.bgm("final");
       if (T.lastKey !== "final") { closePlayerModal(); closeDeath(); SOUND.sfx("fanfare"); }
       T.lastKey = "final";
@@ -640,10 +644,16 @@
     if (!cf) { box.classList.add("hidden"); return; }
     const dMoney = cf.cf.state.money - cf.actual.state.money, dTotal = cf.cf.score.total - cf.actual.score.total;
     const labels = cf.vuls.map(v => v.label).join("·"), cfs = cf.vuls.map(v => v.cf).join(" ");
-    box.innerHTML = `<div class="label">만약에</div><div class="cf-head">👑 1등 ${esc(top.nickname)} (${ch.name})은(는) <b>${labels}</b>입니다.</div>
-      <div class="cf-line">${cfs}, 같은 선택으로 10라운드를 거쳤다면</div>
-      <div class="cf-nums"><div><small>💰 재산</small><b>${sign(dMoney)}</b><span>코인 더</span></div><div><small>총점</small><b>${sign(dTotal)}</b><span>점 더</span></div></div>
-      <div class="cf-foot">실제 ${cf.actual.state.money}코인 · ${cf.actual.score.total}점 → ${cfs.split(" ")[0]} ${cf.cf.state.money}코인 · ${cf.cf.score.total}점 (운 요소 제외)</div>`;
+    const cfShort = cf.vuls.map(v => v.cf.replace("이었다면", "").replace("었다면", "")).join("·");
+    box.innerHTML = `<div class="cf-head">👑 1등 ${esc(top.nickname)} <small>(${ch.name} · ${labels})</small></div>
+      <div class="cf-q">만약 ${cfs}?</div>
+      <div class="cf-compare">
+        <div class="cf-col"><small>실제</small><b>${cf.actual.score.total}점</b><span>💰 ${cf.actual.state.money}코인</span></div>
+        <div class="cf-arrow">→</div>
+        <div class="cf-col cf-better"><small>${cfShort}</small><b>${cf.cf.score.total}점</b><span>💰 ${cf.cf.state.money}코인</span></div>
+      </div>
+      <div class="cf-nums"><span>총점 <b>${sign(dTotal)}</b>점</span><span>재산 <b>${sign(dMoney)}</b>코인</span></div>
+      <div class="cf-foot">같은 선택으로 10라운드 · 운 요소 제외</div>`;
     box.classList.remove("hidden");
   }
   $("btn-final-sort-char").onclick = () => { finalByChar = !finalByChar; renderFinalBoard(T.session); };
