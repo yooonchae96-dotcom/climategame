@@ -188,6 +188,11 @@
     const key = ss.phase + ":" + ss.round;
     const root = $("screen-student");
     const changed = S.lastPhaseKey !== key;
+    // 대기 화면에서는 가운데 캐릭터 카드만 보이게: 헤더의 특징·게이지와 '내 상황' 버튼은 숨김
+    const lobby = ss.phase === "lobby";
+    $("s-profile").classList.toggle("hidden", lobby);
+    $("btn-my-status").classList.toggle("hidden", lobby);
+    if (lobby) $("status-panel").classList.add("hidden");
     if (ss.phase === "lobby") {
       renderCharCard(ch, st);
       showStep(root, "s-step-wait");
@@ -544,7 +549,7 @@
       html += `<div class="bcard ${x.pid === worstPid ? "worst" : x.pid === bestPid ? "best" : ""} ${x.dead ? "dead" : ""}" style="border-top-color:${ch.color}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">
         <div class="b-top">${avatar(ch)}<div style="min-width:0"><div class="b-nick">${esc(x.nickname)}${x.isBot ? "🤖" : ""}</div><div class="b-char">${ch.name}</div></div></div>
         <div class="b-choice">${x.skipped ? `💀 ${x.deadRound + 1}라운드 사망` : `<span class="opt-no pick-${x.choice}">${choiceLabel(x.choice)}</span>${x.text}`}</div>
-        <div class="b-gauges">${g("💰", x.state.money, prev.money, MAX_MONEY, "var(--money)")}${g("❤️", x.state.body, prev.body, 100, "var(--body)")}${g("💙", x.state.mind, prev.mind, 100, "var(--mind)")}</div>
+        <div class="b-gauges">${g("💰", x.state.money, prev.money, MAX_MONEY, "var(--g-money)")}${g("❤️", x.state.body, prev.body, 100, "var(--g-body)")}${g("💙", x.state.mind, prev.mind, 100, "var(--g-mind)")}</div>
         <div class="b-score">누적 ${x.score}점</div></div>`;
     });
     $("board-grid").innerHTML = html;
