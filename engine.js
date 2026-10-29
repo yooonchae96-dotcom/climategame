@@ -17,6 +17,9 @@
   //   매 라운드 선택 결과와 별개로 조금씩 더 잃는다. 재난 때 실제 통계에서 확인되는 차이를 작게 반영한 것.
   const DEVELOPED = [1, 2, 3, 4, 5, 6, 7, 8];
   const SAFE_ROUNDS = 7;   // 7라운드까지는 어떤 일이 있어도 죽지 않는다
+  // 극심한 더위·추위 재난: 8라운드부터 70세 이상은 남은 게이지와 상관없이 급사(고혈압 등)
+  const EXTREME_TEMP = { 1: "폭염", 9: "한파", 13: "폭염", 19: "폭염" };
+  const ELDERLY_RISK_AGE = 70;
   function vulnerabilities(ch) {
     const v = [];
     if (ch.sex === "여") v.push({ key: "female", label: "여성", cf: "남성이었다면", note: "여성: 재난 중 돌봄·안전 부담을 더 졌다." });
@@ -105,7 +108,9 @@
     next.body = clamp(st.body + db + sx.b, 0, 100);
     next.mind = clamp(st.mind + ds + sx.s, 0, 100);
     let dead = false, deadWhy = null, rec = 0;
-    if (next.body <= 0) {
+    if (round >= SAFE_ROUNDS && ch.age >= ELDERLY_RISK_AGE && EXTREME_TEMP[sc.id]) {
+      dead = true; deadWhy = `${EXTREME_TEMP[sc.id]} 속에서 갑자기 고혈압이 악화되어`; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy;
+    } else if (next.body <= 0) {
       if (round < SAFE_ROUNDS) next.body = 1;                       // 7라운드까지는 절대 죽지 않는다
       else { dead = true; deadWhy = next.money <= 0 ? "굶주림과 병으로" : "다쳐서"; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy; }
     }

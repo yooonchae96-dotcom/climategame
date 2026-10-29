@@ -607,3 +607,11 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
 .disaster-strip, .ineq-card, .my-final, .debrief-right, .teacher-table-wrap, .cf-box, .death-row { background: var(--card); }
 .cf-box { background: var(--lime-soft); }
 .ineq-worst { background: var(--pink-soft); } .ineq-best { background: var(--lime-soft); }
+/* 학생 재난 칸: 라벤더(첨부 디자인 #ECACFC), 제목 위·지역 아래 */
+.disaster-strip { background: #ECACFC; }
+.disaster-strip .d-where { color: #6B3B86; margin-top: 2px; margin-bottom: 4px; }
+.disaster-strip p { color: #3A2A45; }
+/* 학생 내 처지 칸: 노랑(첨부 디자인 #F4EC7C), 제목은 가운데 정렬·큰 볼드만 */
+.situation-box { background: #F4EC7C; }
+.situation-box .label { display: block; background: transparent; color: var(--ink); font-size: 20px; font-weight: 900; text-align: center; padding: 0; margin-bottom: 6px; }
+.situation-box p { text-align: center; }

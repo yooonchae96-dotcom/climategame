@@ -41,6 +41,7 @@
   const imgSrc = p => (window.IMAGES && window.IMAGES[p]) || p; // 아티팩트에서는 내장 이미지 사용
   function show(id) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); $(id).classList.add("active");
+    $("sound-ctl").classList.toggle("hidden", !["screen-teacher-login", "screen-teacher-home", "screen-board", "screen-reflections"].includes(id));
     if (id === "screen-teacher-login" || id === "screen-teacher-home") SOUND.bgm("title");
     else if (id !== "screen-board" && id !== "screen-student") SOUND.bgm(null);
   }
@@ -225,9 +226,8 @@
   function renderChoose(ss, ch, st) {
     const sc = scenarioOf(ss.scenarioIds[ss.round]);
     const c = Object.assign({}, ch, { money: st.money, body: st.body, mind: st.mind });
-    $("s-disaster").innerHTML = `<div class="d-img">${disasterImg(sc)}</div><div><div class="d-where">${sc.where}</div><h3>${sc.title}</h3><p>${sc.story}</p></div>`;
+    $("s-disaster").innerHTML = `<div class="d-img">${disasterImg(sc)}</div><div><h3>${sc.title}</h3><div class="d-where">${sc.where}</div><p>${sc.story}</p></div>`;
     $("situation-text").textContent = sc.situation(c);
-    $("choose-stats").innerHTML = statsHTML(st);
     if (st.dead) {
       $("situation-text").textContent = `${st.deadRound + 1}라운드에 ${st.deadWhy} 세상을 떠났다.`;
       $("options").innerHTML = `<div class="dead-box">💀 ${ch.name}은(는) 더 이상 게임을 할 수 없습니다.<br>남은 라운드는 친구들의 결과를 지켜봅니다.</div>`;
