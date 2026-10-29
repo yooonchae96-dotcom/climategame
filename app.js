@@ -69,6 +69,29 @@
     }, delay || 120);
   }
   function disasterImg(sc) { return `<img src="${imgSrc(sc.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${DIS_EMOJI[sc.id - 1] || "🌍"}'))">`; }
+  // 카드 수와 빈 공간 크기에 맞춰 열 수·카드 폭·글자 크기를 정해, 인원이 몇 명이든 스크롤 없이 꽉 차고 가운데 정렬되게
+  //   aspect: 카드 가로/세로 비율(대략), maxW: 카드 최대 폭(px), ratio: 카드 폭 → 글자 크기 비율
+  function fitGrid(el, n, aspect, maxW, ratio) {
+    if (!el || !n) return;
+    const W = el.clientWidth, H = el.clientHeight; if (!W || !H) return;
+    const gap = 8;
+    let best = null;
+    for (let cols = 1; cols <= n; cols++) {
+      const rows = Math.ceil(n / cols);
+      const w = Math.min((W - gap * (cols - 1)) / cols, (H - gap * (rows - 1)) / rows * aspect, maxW);
+      if (!best || w > best.w) best = { cols, w };
+    }
+    const w = Math.floor(best.w);
+    el.style.gridTemplateColumns = `repeat(${best.cols}, ${w}px)`;
+    let fs = Math.max(8, Math.min(20, w * ratio));
+    el.style.fontSize = fs + "px";
+    // 높이가 넘치면 글자를 조금씩 줄여 한 화면에 들어가게
+    let guard = 24;
+    while (el.scrollHeight > el.clientHeight + 1 && fs > 7 && guard--) { fs -= 0.5; el.style.fontSize = fs + "px"; }
+  }
+  const fitLobby = () => fitGrid($("lobby-players"), T.players.length, 1.5, 320, 1 / 10);
+  const fitBoard = () => { const n = $("board-grid").querySelectorAll(".bcard").length; fitGrid($("board-grid"), n + (T.sort === "char" ? 2 : 0), 1.05, 260, 1 / 11); };
+  window.addEventListener("resize", () => { if (!$("screen-board").classList.contains("active")) return; if ($("b-step-lobby").classList.contains("active")) fitLobby(); if ($("b-step-reveal").classList.contains("active")) fitBoard(); });
   const sessionRef = code => db.doc("sessions/" + code);
   const playersRef = code => db.collection("sessions/" + code + "/players");
   const reflectionsRef = () => db.collection("reflections");
@@ -322,27 +345,30 @@
   };
 
   function renderLobbyQR(code) {
-    const el = $("lobby-qrcode");
-    if (!el) return;
-    el.innerHTML = "";
     let joinUrl = `${window.location.origin}${window.location.pathname}?code=${encodeURIComponent(code)}`;
     if (window.location.protocol === "file:") {
       joinUrl = `https://climate-game-olive-nine.vercel.app/?code=${encodeURIComponent(code)}`;
     }
-    if (window.QRCode) {
-      try {
-        new QRCode(el, {
-          text: joinUrl,
-          width: 180,
-          height: 180,
-          colorDark: "#111111",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      } catch (e) {
-        console.error("QR Code error:", e);
+    const draw = (el, size) => {
+      if (!el) return;
+      el.innerHTML = "";
+      if (window.QRCode) {
+        try {
+          new QRCode(el, {
+            text: joinUrl,
+            width: size,
+            height: size,
+            colorDark: "#111111",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (e) {
+          console.error("QR Code error:", e);
+        }
       }
-    }
+    };
+    draw($("lobby-qrcode"), 180);
+    draw($("b-rejoin-qr"), 76); // 헤더에 고정되는 작은 QR (라운드 중에도 재참가용)
   }
 
   function openBoard(code) {
@@ -369,8 +395,11 @@
       T.lastCount = T.players.length;
       $("lobby-players").innerHTML = T.players.map(p => { const ch = charOf(p.charId); const st = latestState(ss, p.pid, p.charId); return `<div class="p-chip ${p.isBot ? "bot" : ""}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 캐릭터 보기"><div class="p-head">${avatar(ch)}<div style="min-width:0"><div class="p-nick">${esc(p.nickname)}</div><div class="p-char">${ch.name}</div></div></div><div class="stats stats-chip">${statsHTML(st, true)}</div></div>`; }).join("") || `<p class="hint">아직 참가한 학생이 없습니다.</p>`;
       $("btn-start-round").disabled = T.players.length === 0;
+      $("b-rejoin").classList.add("hidden");
       showStep(root, "b-step-lobby");
+      fitLobby();
     } else if (ss.phase === "choosing") {
+      $("b-rejoin").classList.remove("hidden");
       const sc = scenarioOf(ss.scenarioIds[ss.round]);
       const key = "c" + ss.round;
       const cat = DIS_CAT[sc.id] || "social";
@@ -401,11 +430,15 @@
       showStep(root, "b-step-choosing");
       T.lastKey = key;
     } else if (ss.phase === "reveal") {
+      $("b-rejoin").classList.remove("hidden");
       SOUND.bgm("reveal");
-      if (T.lastKey !== "v" + ss.round) { closePlayerModal(); SOUND.sfx("reveal"); renderRevealBoard(ss, true); }
+      const newRound = T.lastKey !== "v" + ss.round;
+      if (newRound) { closePlayerModal(); SOUND.sfx("reveal"); renderRevealBoard(ss, true); }
       showStep(root, "b-step-reveal");
+      if (newRound) fitBoard();
       T.lastKey = "v" + ss.round;
     } else if (ss.phase === "final") {
+      $("b-rejoin").classList.remove("hidden");
       SOUND.bgm("final");
       if (T.lastKey !== "final") { closePlayerModal(); SOUND.sfx("fanfare"); }
       T.lastKey = "final";
@@ -532,7 +565,7 @@
   $("btn-player-modal-close").onclick = closePlayerModal;
   $("player-modal-backdrop").onclick = closePlayerModal;
   document.addEventListener("keydown", e => { if (e.key === "Escape") closePlayerModal(); });
-  document.querySelectorAll(".reveal-sort .chip").forEach(b => b.onclick = () => { T.sort = b.dataset.sort; document.querySelectorAll(".reveal-sort .chip").forEach(c => c.classList.toggle("active", c === b)); renderRevealBoard(T.session, false); });
+  document.querySelectorAll(".reveal-sort .chip").forEach(b => b.onclick = () => { T.sort = b.dataset.sort; document.querySelectorAll(".reveal-sort .chip").forEach(c => c.classList.toggle("active", c === b)); renderRevealBoard(T.session, false); fitBoard(); });
 
   $("btn-next-round").onclick = async () => {
     const r = T.session.round;
