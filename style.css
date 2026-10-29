@@ -84,11 +84,12 @@ select { font-size: 15px; padding: 7px 10px; border: var(--border); border-radiu
 .gauge-anim .label { align-self: flex-start; }
 
 /* ---------- 시작 ---------- */
-#screen-start { align-items: center; justify-content: center; background: radial-gradient(circle at 20% 20%, #FFE600 0 12%, transparent 13%), radial-gradient(circle at 85% 30%, #00E5C8 0 10%, transparent 11%), radial-gradient(circle at 70% 85%, #FF5E78 0 14%, transparent 15%), radial-gradient(circle at 15% 80%, #2962FF 0 9%, transparent 10%), var(--bg); }
-.start-box { background: var(--card); border: var(--border); border-radius: 24px; box-shadow: 8px 8px 0 #111; padding: 36px 48px; text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; max-width: 100%; }
+/* 표지 그림(images/cover.jpg)을 배경으로 깔고, 제목 카드는 그림 위쪽 빈 공간에 둠 */
+#screen-start { align-items: center; justify-content: flex-start; padding-top: clamp(12px, 3vh, 36px); background: url(images/cover.jpg) center / cover no-repeat, var(--bg); }
+.start-box { background: rgba(255,255,255,.93); border: var(--border); border-radius: 24px; box-shadow: 8px 8px 0 #111; padding: 20px 40px; text-align: center; display: flex; flex-direction: column; gap: 9px; align-items: center; max-width: 100%; }
 .start-badge { background: var(--mind); color: #fff; font-weight: 900; padding: 4px 14px; border-radius: 999px; font-size: 15px; }
-.start-title { font-size: clamp(36px, 6vw, 56px); letter-spacing: -1px; text-wrap: balance; }
-.start-sub { font-size: 18px; color: var(--muted); }
+.start-title { font-size: clamp(30px, 4.6vw, 46px); letter-spacing: -1px; text-wrap: balance; }
+.start-sub { font-size: 16px; color: var(--muted); }
 .start-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 
 /* ---------- 학생 ---------- */
@@ -366,8 +367,10 @@ select { font-size: 15px; padding: 7px 10px; border: var(--border); border-radiu
   h2 { font-size: 24px; }
   .screen { padding: 10px 12px; }
   .center-card { padding: 20px 16px; gap: 10px; }
-  .start-title { font-size: 32px; }
-  .start-sub { font-size: 15px; }
+  .start-title { font-size: 30px; }
+  .start-sub { font-size: 14px; }
+  #screen-start { padding-top: 14px; background: url(images/cover.jpg) center bottom / auto 58% no-repeat, var(--bg); }
+  .start-box { padding: 16px 18px; gap: 8px; }
   input[type=text], input[type=password] { font-size: 20px; padding: 8px 12px; }
   .btn { font-size: 16px; padding: 9px 16px; }
   .btn-big { font-size: 19px; padding: 10px 22px; }
