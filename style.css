@@ -625,16 +625,15 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
 .ask-box .option { background: #fff; }
 .ask-box .option.locked { background: #F7F7F9; }
 
-/* ---------- 시작 화면: 표지 그림과 어우러지는 반투명 크림 유리 카드 + 알록달록 제목 ---------- */
+/* ---------- 시작 화면: 패널 없이 표지 그림 위에 게임 로고 제목 + 버튼 ---------- */
+/* 패널 없이 제목과 버튼을 표지 그림 위에 바로 올림 */
 .start-box {
-  background: rgba(255, 251, 240, .72);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
-  border: 1.5px solid rgba(255, 255, 255, .85);
-  box-shadow: 0 18px 48px rgba(30, 33, 64, .14), inset 0 1px 0 rgba(255, 255, 255, .9);
-  border-radius: 32px;
-  padding: 26px 48px 30px;
-  gap: 16px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 10px 24px;
+  gap: 18px;
 }
 .start-title {
   /* 게임 로고 느낌: 굵은 글씨 + 진한 외곽선 + 아래로 쌓인 입체 그림자 */
@@ -655,6 +654,6 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
 }
 .start-title span { display: inline-block; }
 @media (max-width: 600px) {
-  .start-box { padding: 18px 20px 22px; gap: 12px; border-radius: 26px; }
+  .start-box { padding: 8px 12px; gap: 14px; }
   .start-title { font-size: 38px; letter-spacing: 1px; -webkit-text-stroke-width: 1.5px; text-shadow: 0 2px 0 var(--navy), 0 4px 0 var(--primary), 0 6px 0 var(--navy), 0 10px 16px rgba(30,33,64,.28); }
 }
