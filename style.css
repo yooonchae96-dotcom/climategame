@@ -657,3 +657,55 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
   .start-box { padding: 8px 12px; gap: 14px; }
   .start-title { font-size: 38px; letter-spacing: 1px; -webkit-text-stroke-width: 1.5px; text-shadow: 0 2px 0 var(--navy), 0 4px 0 var(--primary), 0 6px 0 var(--navy), 0 10px 16px rgba(30,33,64,.28); }
 }
+
+/* ---------- 교사 로그인·수업 준비: 표지 그림을 어둡게 깐 배경 + 남색 유리 카드 + 게임 로고식 제목 ---------- */
+#screen-teacher-login, #screen-teacher-home {
+  background: linear-gradient(rgba(18, 21, 52, .62), rgba(18, 21, 52, .82)), url(images/cover.jpg) center / cover no-repeat;
+}
+#screen-teacher-login .center-card, #screen-teacher-home .center-card {
+  background: rgba(30, 33, 64, .72);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .14);
+  border-radius: 32px;
+  padding: 34px 40px 30px;
+  gap: 16px;
+}
+#screen-teacher-login h2, #screen-teacher-home h2 {
+  font-family: "Black Han Sans", var(--font);
+  font-weight: 400;
+  font-size: 42px;
+  letter-spacing: 1.5px;
+  line-height: 1.1;
+  margin: 2px 0 6px;
+  color: #fff;
+  -webkit-text-stroke: 1.5px var(--navy);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 var(--navy), 0 4px 0 var(--primary), 0 6px 0 var(--primary), 0 8px 0 var(--navy), 0 14px 20px rgba(0,0,0,.35);
+}
+#screen-teacher-login input[type=password], #screen-teacher-home input[type=text] {
+  background: rgba(255, 255, 255, .95); color: var(--ink); border-radius: 999px; box-shadow: inset 0 2px 6px rgba(30,33,64,.12);
+}
+#screen-teacher-login input::placeholder, #screen-teacher-home input::placeholder { color: #8A8EA8; }
+#screen-teacher-login input:focus-visible, #screen-teacher-home input:focus-visible { outline: 3px solid var(--orange); }
+#screen-teacher-home .field { color: rgba(255, 255, 255, .78); gap: 6px; }
+#screen-teacher-home .field span { text-align: center; font-size: 15px; }
+#screen-teacher-login .error, #screen-teacher-home .error { color: #FF9DB3; }
+/* 버튼: 입체(아래 단) 알약. 기본=파랑, 큰 버튼=주황(시작 화면 교사 버튼과 같은 색), 보조=투명 테두리 */
+#screen-teacher-login .btn, #screen-teacher-home .btn {
+  background: var(--primary); color: #fff; box-shadow: 0 5px 0 #112A70; transition: transform .08s, box-shadow .08s;
+}
+#screen-teacher-login .btn:active, #screen-teacher-home .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #112A70; background: var(--primary); }
+#screen-teacher-home .btn-big { background: var(--orange); color: var(--ink); box-shadow: 0 5px 0 #B9712E; }
+#screen-teacher-home .btn-big:active { background: var(--orange); box-shadow: 0 2px 0 #B9712E; }
+#screen-teacher-login .btn-ghost, #screen-teacher-home .btn-ghost {
+  background: transparent; color: #fff; border: 1.5px solid rgba(255, 255, 255, .4); box-shadow: none;
+}
+#screen-teacher-login .btn-ghost:active, #screen-teacher-home .btn-ghost:active { background: rgba(255,255,255,.12); transform: none; box-shadow: none; }
+#screen-teacher-login .btn:focus-visible, #screen-teacher-home .btn:focus-visible { outline: 3px solid var(--orange); }
+@media (max-width: 600px) {
+  #screen-teacher-login .center-card, #screen-teacher-home .center-card { padding: 24px 18px 20px; gap: 12px; border-radius: 26px; }
+  #screen-teacher-login h2, #screen-teacher-home h2 { font-size: 32px; }
+}

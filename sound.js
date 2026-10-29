@@ -32,8 +32,8 @@
     sfxGain = ctx.createGain(); sfxGain.gain.value = 0.5; sfxGain.connect(master);
     return true;
   }
-  // 첫 상호작용에서 깨우기
-  ["pointerdown", "keydown", "touchstart"].forEach(ev => root.addEventListener(ev, () => { if (ensure() && current) startBgm(current); }, { once: false, passive: true }));
+  // 첫 상호작용에서 깨우기. 이미 BGM이 돌고 있으면(bgmTimer) 다시 시작하지 않는다 — 키를 누를 때마다 처음부터 재생되던 문제 방지
+  ["pointerdown", "keydown", "touchstart"].forEach(ev => root.addEventListener(ev, () => { if (ensure() && current && !bgmTimer) startBgm(current); }, { once: false, passive: true }));
 
   // ---------- 기본 악기 ----------
   const NOTE = {};
