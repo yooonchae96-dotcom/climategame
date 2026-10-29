@@ -44,6 +44,7 @@
     <section id="screen-student" class="screen">
       <header class="s-header">
         <div class="mini-char" id="s-mini"></div>
+        <div class="s-profile" id="s-profile"></div>
         <div class="s-round" id="s-round"></div>
         <button class="btn btn-sm btn-ghost" id="btn-my-status">내 상황</button>
       </header>
@@ -69,6 +70,7 @@
           <div class="my-gauge-box"><div class="label">내 현재 게이지</div><div class="stats" id="choose-stats"></div></div>
           <div class="label">어떻게 할까?</div>
           <div class="options" id="options"></div>
+          <p class="hint opt-hint">선택지의 숫자는 예상 변화입니다. 잃는 쪽은 운에 따라 ±10% 정도 달라질 수 있어요.</p>
           <div class="submitted-box hidden" id="submitted-box">✅ 제출했어요. 선생님이 결과를 공개할 때까지 기다려 주세요.</div>
         </div>
         <!-- 결과 -->
@@ -91,9 +93,9 @@
               <div class="label">생각 정리와 소감</div>
               <div class="debrief-q" id="debrief-q"></div>
               <textarea id="debrief-a" placeholder="답을 적어 주세요"></textarea>
+              <textarea id="reflection-text" class="hidden" placeholder="소감: 이 게임을 하고 '기후 불평등'에 대해 새로 알게 된 것이나 느낀 점 (50자 이상)"></textarea>
               <div class="debrief-nav"><span id="debrief-count"></span><button class="btn btn-sm" id="btn-debrief-next">다음 질문</button></div>
-              <textarea id="reflection-text" placeholder="소감: 이 게임을 하고 '기후 불평등'에 대해 새로 알게 된 것이나 느낀 점 (50자 이상)"></textarea>
-              <div class="reflection-foot"><span id="reflection-len">0자</span><button class="btn btn-big" id="btn-submit">소감 제출</button></div>
+              <div class="reflection-foot hidden" id="reflection-foot"><span id="reflection-len">0자</span><button class="btn btn-big" id="btn-submit">소감 제출</button></div>
               <p class="error" id="reflection-error"></p>
             </div>
           </div>
@@ -216,6 +218,7 @@
           </div>
           <div class="ineq-row ineq-board" id="b-ineq"></div>
           <div class="board-grid" id="board-grid"></div>
+          <div class="gauge-countdown hidden" id="gauge-countdown"><div class="gc-title">잠시 후 게이지가 바뀝니다</div><div class="gc-num" id="gc-num">3</div><div class="gc-sub">빗금 부분이 이번 라운드에 잃는 만큼입니다</div></div>
         </div>
         <!-- 최종 -->
         <div class="step" id="b-step-final">
@@ -245,6 +248,7 @@
             <ul id="m-traits" class="char-traits"></ul>
             <p id="m-strength" class="char-strength"></p>
             <div class="stats" id="m-stats"></div>
+            <div class="m-extra" id="m-extra"></div>
           </div>
         </div>
       </div>

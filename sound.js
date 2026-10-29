@@ -87,12 +87,15 @@
       if (i % 2 === 1) noise(bgmGain, t, 0.03, 0.08, 6000);
       if (i % 16 === 0) tone(bgmGain, f("A2"), t, s * 15, "sine", 0.5, 0.05, 0.3);
     } },
-    reveal: { bpm: 96, steps: 32, play(i, t, s) {
-      // 무거운 분위기: 느린 베이스 + 간헐적 화음
-      const chords = [["D3", "F3", "A3"], ["A#2", "D3", "F3"], ["C3", "E3", "G3"], ["A2", "C3", "E3"]];
-      if (i % 8 === 0) chords[(i / 8) | 0].forEach(n => tone(bgmGain, f(n), t, s * 7.5, "triangle", 0.3, 0.1, 0.4));
-      if (i % 4 === 0) kick(bgmGain, t, 0.4);
-      if (i % 8 === 4) noise(bgmGain, t, 0.12, 0.1, 1500);
+    reveal: { bpm: 132, steps: 32, play(i, t, s) {
+      // 신나는 분위기: 밝은 장조 멜로디 + 통통 튀는 베이스 + 경쾌한 드럼
+      const mel = ["G5", null, "B5", "D6", null, "B5", "G5", null, "A5", null, "C6", "E6", null, "C6", "A5", null, "F#5", null, "A5", "D6", null, "A5", "F#5", null, "G5", "B5", "D6", "G6", null, "D6", "B5", null];
+      const bass = ["G2", "G3", "A2", "A3", "D2", "D3", "G2", "G3"];
+      if (mel[i]) tone(bgmGain, f(mel[i]), t, s * 1.3, "square", 0.15, 0.01, 0.06);
+      if (i % 2 === 0) tone(bgmGain, f(bass[(i / 4) | 0]), t, s * 1.6, "triangle", 0.45, 0.01, 0.08);
+      if (i % 4 === 0) kick(bgmGain, t, 0.55);
+      if (i % 4 === 2) noise(bgmGain, t, 0.05, 0.14, 5000);
+      if (i % 8 === 6) noise(bgmGain, t, 0.03, 0.08, 7000);
     } },
     final: { bpm: 120, steps: 32, play(i, t, s) {
       const mel = ["C5", "E5", "G5", "C6", null, "G5", null, "E5", "F5", "A5", "C6", "F6", null, "C6", null, "A5", "G5", "B5", "D6", "G6", null, "D6", null, "B5", "C6", null, "G5", null, "E5", null, "C5", null];

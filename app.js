@@ -51,12 +51,12 @@
     return row("money", mini ? "재산" : "💰 재산", st.money, MAX_MONEY, prev && prev.money) + row("body", mini ? "몸" : "❤️ 몸", st.body, 100, prev && prev.body) + row("mind", mini ? "마음" : "💙 마음", st.mind, 100, prev && prev.mind);
   }
   // 컨테이너 안의 게이지(막대 폭 + 숫자)를 이전 값에서 현재 값으로 움직입니다.
-  function animateGauges(root, delay) {
+  function animateGauges(root, delay, dur) {
     const fills = root.querySelectorAll(".stat-fill[data-to], .b-bar .fill[data-to]");
     const nums = root.querySelectorAll("b[data-from][data-to]");
-    const DUR = 1100;
+    const DUR = dur || 1100;
     setTimeout(() => {
-      fills.forEach(el => { el.style.width = el.dataset.to + "%"; });
+      fills.forEach(el => { el.style.transitionDuration = (DUR / 1000) + "s"; el.style.width = el.dataset.to + "%"; });
       const t0 = performance.now();
       const step = now => {
         const k = Math.min(1, (now - t0) / DUR), e = 1 - Math.pow(1 - k, 3);
@@ -135,6 +135,7 @@
     setAccent(ch.color);
     const st = latestState(ss, S.pid, p.charId);
     $("s-mini").innerHTML = avatar(ch) + `<span>${ch.name}</span><span class="hint">· ${esc(p.nickname)}</span>`;
+    $("s-profile").innerHTML = `<ul class="char-traits s-traits">${ch.traits.map(t => `<li>${t}</li>`).join("")}</ul><div class="stats s-stats">${statsHTML(st, true)}</div>`;
     $("s-round").textContent = ss.phase === "lobby" ? "대기 중" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} · ${PHASE_LABEL[ss.phase]}`;
     $("status-stats").innerHTML = statsHTML(st);
     $("status-history").innerHTML = historyHTML(ss, S.pid) || `<p class="hint">아직 겪은 재난이 없습니다.</p>`;
@@ -179,7 +180,9 @@
     $("situation-text").textContent = sc.situation(c);
     $("choose-stats").innerHTML = statsHTML(st);
     const status = E.optionStatus(ch, st, sc);
-    $("options").innerHTML = status.map(o => `<button class="option ${o.lock ? "locked" : ""}" data-i="${o.index}" ${o.lock ? "disabled" : ""}><span class="opt-no">${choiceLabel(o.index)}</span><span>${o.text}</span>${o.lock ? `<span class="lock-reason">🔒 ${o.lock}</span>` : ""}</button>`).join("");
+    const fx = (v, ic) => `<span class="${v < 0 ? "neg" : v > 0 ? "pos" : "zero"}">${ic} ${sign(v)}</span>`;
+    const effHTML = i => { let r = null; try { r = sc.options[i].effect(c); } catch (e) { } return r ? `<span class="opt-eff">${fx(r.m, "💰")}${fx(r.b, "❤️")}${fx(r.s, "💙")}</span>` : ""; };
+    $("options").innerHTML = status.map(o => `<button class="option ${o.lock ? "locked" : ""}" data-i="${o.index}" ${o.lock ? "disabled" : ""}><span class="opt-no">${choiceLabel(o.index)}</span><span>${o.text}</span>${effHTML(o.index)}${o.lock ? `<span class="lock-reason">🔒 ${o.lock}</span>` : ""}</button>`).join("");
     $("options").querySelectorAll(".option:not(.locked)").forEach(b => b.onclick = () => submitChoice(+b.dataset.i));
     markChosen();
   }
@@ -244,20 +247,27 @@
   // 디브리핑 + 소감
   let qIdx = 0;
   const answers = [];
+  // 마지막(5번째) 질문은 소감 칸
+  const REFLECTION_Q = "이 게임을 하고 '기후 불평등'에 대해 새로 알게 된 것이나 느낀 점을 적어 보세요. (소감, 50자 이상)";
+  const QN = DEBRIEF_QUESTIONS.length + 1;
   function renderQuestion() {
-    $("debrief-q").textContent = `${qIdx + 1}. ${DEBRIEF_QUESTIONS[qIdx]}`;
-    $("debrief-a").value = answers[qIdx] || "";
-    $("debrief-count").textContent = `${qIdx + 1} / ${DEBRIEF_QUESTIONS.length}`;
-    $("btn-debrief-next").textContent = qIdx === DEBRIEF_QUESTIONS.length - 1 ? "처음 질문으로" : "다음 질문";
+    const last = qIdx === QN - 1;
+    $("debrief-q").textContent = `${qIdx + 1}. ${last ? REFLECTION_Q : DEBRIEF_QUESTIONS[qIdx]}`;
+    $("debrief-a").classList.toggle("hidden", last);
+    $("reflection-text").classList.toggle("hidden", !last);
+    $("reflection-foot").classList.toggle("hidden", !last);
+    if (!last) $("debrief-a").value = answers[qIdx] || "";
+    $("debrief-count").textContent = `${qIdx + 1} / ${QN}`;
+    $("btn-debrief-next").textContent = last ? "처음 질문으로" : "다음 질문";
   }
-  $("btn-debrief-next").onclick = () => { answers[qIdx] = $("debrief-a").value; qIdx = (qIdx + 1) % DEBRIEF_QUESTIONS.length; renderQuestion(); };
+  $("btn-debrief-next").onclick = () => { if (qIdx < QN - 1) answers[qIdx] = $("debrief-a").value; qIdx = (qIdx + 1) % QN; renderQuestion(); };
   $("debrief-a").addEventListener("input", () => { answers[qIdx] = $("debrief-a").value; });
   $("reflection-text").addEventListener("input", () => { $("reflection-len").textContent = `${$("reflection-text").value.trim().length}자`; });
   $("btn-submit").onclick = async () => {
     const text = $("reflection-text").value.trim();
     if (text.length < 50) { $("reflection-error").textContent = `50자 이상 써 주세요. (지금 ${text.length}자)`; return; }
     if (text.length > 300) { $("reflection-error").textContent = "300자 이하로 줄여 주세요."; return; }
-    answers[qIdx] = $("debrief-a").value;
+    if (qIdx < QN - 1) answers[qIdx] = $("debrief-a").value;
     $("btn-submit").disabled = true; $("reflection-error").textContent = "저장 중...";
     const ranking = finalRanking(S.session); const me = ranking.find(x => x.pid === S.pid);
     const row = { nickname: S.player.nickname, character: charOf(S.player.charId).name, score: me ? me.score.total : 0, code: S.code, reflection: text, debrief: answers.filter(Boolean).join(" / "), submitted_at: new Date().toISOString() };
@@ -274,7 +284,7 @@
     const list = Object.entries(results).map(([pid, x]) => Object.assign({ pid }, x)).sort((a, b) => b.loss - a.loss);
     if (!list.length) return "";
     const worst = list[0], best = list[list.length - 1];
-    const card = (x, tag, cls) => { const ch = charOf(x.charId); return `<div class="ineq-card ${cls}">${avatar(ch, 72)}<div><div class="tag">${tag}</div><h3>${ch.name} <small>${esc(x.nickname)} · ${ch.place}</small></h3><div class="ineq-delta">💰 ${sign(x.dm)} · ❤️ ${sign(x.db)} · 💙 ${sign(x.ds)} · ${x.text}</div><p class="ineq-why">${x.why}</p></div></div>`; };
+    const card = (x, tag, cls) => { const ch = charOf(x.charId); return `<div class="ineq-card ${cls}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">${avatar(ch, 72)}<div><div class="tag">${tag}</div><h3>${ch.name} <small>${esc(x.nickname)} · ${ch.place}</small></h3><div class="ineq-delta">💰 ${sign(x.dm)} · ❤️ ${sign(x.db)} · 💙 ${sign(x.ds)} · ${x.text}</div><p class="ineq-why">${x.why}</p></div></div>`; };
     return card(worst, "가장 많이 잃음", "ineq-worst") + `<div class="ineq-vs">VS</div>` + card(best, "가장 적게 잃음", "ineq-best");
   }
   // 공통: 최종 순위 (session.results 기준)
@@ -353,13 +363,11 @@
     $("b-phase").textContent = ss.phase === "lobby" ? "대기실" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} 라운드 · ${PHASE_LABEL[ss.phase]}`;
     $("b-count").textContent = `참가 ${T.players.length}명`;
     const root = $("screen-board");
-    if (ss.phase !== "lobby") closePlayerModal();
     if (ss.phase === "lobby") {
       SOUND.bgm("lobby");
       if (T.lastCount !== undefined && T.players.length > T.lastCount) SOUND.sfx("join");
       T.lastCount = T.players.length;
       $("lobby-players").innerHTML = T.players.map(p => { const ch = charOf(p.charId); const st = latestState(ss, p.pid, p.charId); return `<div class="p-chip ${p.isBot ? "bot" : ""}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 캐릭터 보기"><div class="p-head">${avatar(ch)}<div style="min-width:0"><div class="p-nick">${esc(p.nickname)}</div><div class="p-char">${ch.name}</div></div></div><div class="stats stats-chip">${statsHTML(st, true)}</div></div>`; }).join("") || `<p class="hint">아직 참가한 학생이 없습니다.</p>`;
-      $("lobby-players").querySelectorAll(".p-chip").forEach(el => { el.onclick = () => openPlayerModal(el.dataset.pid); el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPlayerModal(el.dataset.pid); } }; });
       $("btn-start-round").disabled = T.players.length === 0;
       showStep(root, "b-step-lobby");
     } else if (ss.phase === "choosing") {
@@ -368,6 +376,7 @@
       const cat = DIS_CAT[sc.id] || "social";
       SOUND.bgm(SOUND.bgmFor(cat));
       if (T.lastKey !== key) {
+        closePlayerModal();
         SOUND.sfx(SOUND.sfxFor(cat));
         $("b-disaster-where").textContent = sc.where; $("b-disaster-title").textContent = sc.title; $("b-disaster-story").textContent = sc.story;
         $("b-disaster-img").innerHTML = disasterImg(sc);
@@ -386,19 +395,19 @@
       const byChar = {}; T.players.forEach(p => { (byChar[p.charId] = byChar[p.charId] || []).push(p); });
       $("char-choices").innerHTML = CHARACTERS.filter(ch => byChar[ch.id]).map(ch => {
         const ps = byChar[ch.id];
-        const picks = ps.map(p => { const c = pickOf(p); return `<span class="pick ${c === undefined ? "wait" : "pick-" + c}">${c === undefined ? (p.isBot ? "🤖" : "…") : choiceLabel(c)}<small>${esc(p.nickname)}</small></span>`; }).join("");
-        return `<div class="cc-row" style="border-left-color:${ch.color}">${avatar(ch)}<div class="cc-name">${ch.name}<small>${ps.length}명</small></div><div class="cc-picks">${picks}</div></div>`;
+        const picks = ps.map(p => { const c = pickOf(p); return `<span class="pick ${c === undefined ? "wait" : "pick-" + c}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 상황 보기"><b>${c === undefined ? (p.isBot ? "🤖" : "…") : choiceLabel(c)}</b>${c === undefined ? "" : `<span class="pick-text">${esc(sc.options[c].text)}</span>`}<small>${esc(p.nickname)}</small></span>`; }).join("");
+        return `<div class="cc-row" style="border-left-color:${ch.color}" data-pid="${ps[0].pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">${avatar(ch)}<div class="cc-name">${ch.name}<small>${ps.length}명</small></div><div class="cc-picks">${picks}</div></div>`;
       }).join("");
       showStep(root, "b-step-choosing");
       T.lastKey = key;
     } else if (ss.phase === "reveal") {
       SOUND.bgm("reveal");
-      if (T.lastKey !== "v" + ss.round) { SOUND.sfx("reveal"); renderRevealBoard(ss, true); }
+      if (T.lastKey !== "v" + ss.round) { closePlayerModal(); SOUND.sfx("reveal"); renderRevealBoard(ss, true); }
       showStep(root, "b-step-reveal");
       T.lastKey = "v" + ss.round;
     } else if (ss.phase === "final") {
       SOUND.bgm("final");
-      if (T.lastKey !== "final") SOUND.sfx("fanfare");
+      if (T.lastKey !== "final") { closePlayerModal(); SOUND.sfx("fanfare"); }
       T.lastKey = "final";
       renderFinalBoard(ss);
       showStep(root, "b-step-final");
@@ -467,17 +476,27 @@
         const pct = n => Math.min(100, Math.max(0, n / max * 100)), d = v - pv;
         return `<div class="b-g"><span class="b-g-ico">${icon}</span><div class="b-bar">${d !== 0 ? `<i class="ghost ${d < 0 ? "lost" : ""}" style="width:${pct(pv)}%"></i>` : ""}<i class="fill" style="width:${pct(animate ? pv : v)}%;background:${color}" data-to="${pct(v)}"></i></div><span class="b-g-num"><b data-from="${animate ? pv : v}" data-to="${v}">${animate ? pv : v}</b><small class="${d < 0 ? "neg" : d > 0 ? "pos" : ""}">${d === 0 ? "" : sign(d)}</small></span></div>`;
       };
-      html += `<div class="bcard ${x.pid === worstPid ? "worst" : x.pid === bestPid ? "best" : ""}" style="border-top-color:${ch.color}">
+      html += `<div class="bcard ${x.pid === worstPid ? "worst" : x.pid === bestPid ? "best" : ""}" style="border-top-color:${ch.color}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">
         <div class="b-top">${avatar(ch)}<div style="min-width:0"><div class="b-nick">${esc(x.nickname)}${x.isBot ? "🤖" : ""}</div><div class="b-char">${ch.name}</div></div></div>
         <div class="b-choice"><span class="opt-no pick-${x.choice}">${choiceLabel(x.choice)}</span>${x.text}</div>
         <div class="b-gauges">${g("💰", x.state.money, prev.money, MAX_MONEY, "var(--money)")}${g("❤️", x.state.body, prev.body, 100, "var(--body)")}${g("💙", x.state.mind, prev.mind, 100, "var(--mind)")}</div>
         <div class="b-score">누적 ${x.score}점</div></div>`;
     });
     $("board-grid").innerHTML = html;
+    if (T.cdTimer) { clearInterval(T.cdTimer); T.cdTimer = null; }
+    $("gauge-countdown").classList.add("hidden");
     if (animate) {
-      animateGauges($("board-grid"), 500);
-      const sum = list.reduce((a, x) => a + x.dm + x.db + x.ds, 0);
-      setTimeout(() => SOUND.sfx(sum < 0 ? "drain" : "rise"), 500);
+      // 3초 예고(3·2·1) 뒤 2.6초에 걸쳐 천천히 게이지가 움직임
+      const cd = $("gauge-countdown"), num = $("gc-num");
+      let n = 3; num.textContent = n; cd.classList.remove("hidden"); SOUND.sfx("tick");
+      T.cdTimer = setInterval(() => {
+        n--;
+        if (n > 0) { num.textContent = n; SOUND.sfx("tick"); return; }
+        clearInterval(T.cdTimer); T.cdTimer = null; cd.classList.add("hidden");
+        animateGauges($("board-grid"), 50, 2600);
+        const sum = list.reduce((a, x) => a + x.dm + x.db + x.ds, 0);
+        SOUND.sfx(sum < 0 ? "drain" : "rise");
+      }, 1000);
     }
   }
   // 대기실 참가자 모달
@@ -494,9 +513,21 @@
     $("m-traits").innerHTML = ch.traits.map(t => `<li>${t}</li>`).join("");
     $("m-strength").textContent = ch.strength;
     $("m-stats").innerHTML = statsHTML(st);
+    const ss = T.session; let extra = "";
+    if (ss.phase === "choosing") {
+      const c = p.choices && p.choices["r" + ss.round], sc = scenarioOf(ss.scenarioIds[ss.round]);
+      extra += `<div class="m-now"><b>${ss.round + 1}라운드 · ${sc.title}</b>${c === undefined ? `<span class="pick wait">아직 선택 안 함</span>` : `<span class="pick pick-${c}"><b>${choiceLabel(c)}</b><span class="pick-text">${esc(sc.options[c].text)}</span></span>`}</div>`;
+    }
+    const sc0 = E.score(st);
+    extra += `<div class="m-score">누적 점수 <b>${sc0.total}</b> <small>= 재산 ${sc0.moneyScore} + 몸 ${st.body} + 마음 ${st.mind}</small></div>`;
+    extra += `<div class="label">지금까지 겪은 라운드</div><div class="history">${historyHTML(ss, pid) || `<p class="hint">아직 겪은 재난이 없습니다.</p>`}</div>`;
+    $("m-extra").innerHTML = extra;
     m.classList.remove("hidden");
     SOUND.sfx("pop");
   }
+  // 전자칠판 어디서든 data-pid가 있는 카드(대기실 칩·선택 현황·결과 카드·불평등 카드·순위)를 누르면 모달
+  $("screen-board").addEventListener("click", e => { if (e.target.closest("button")) return; const el = e.target.closest("[data-pid]"); if (el) openPlayerModal(el.dataset.pid); });
+  $("screen-board").addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.dataset && e.target.dataset.pid) { e.preventDefault(); openPlayerModal(e.target.dataset.pid); } });
   function closePlayerModal() { const m = $("player-modal"); if (m && !m.classList.contains("hidden")) m.classList.add("hidden"); }
   $("btn-player-modal-close").onclick = closePlayerModal;
   $("player-modal-backdrop").onclick = closePlayerModal;
@@ -525,10 +556,10 @@
     $("group-avg").innerHTML = `<div class="label">조건별 평균 점수 (${ranking.length}명)</div>` + groups.map(g => `<div class="ga-row"><span>${g[0]}</span><b>${avg(g[1])}</b><span>${g[2]}</span><b>${avg(g[3])}</b></div>`).join("");
     if (finalByChar) {
       const byChar = CHARACTERS.map(ch => { const arr = ranking.filter(x => x.charId === ch.id); return { ch, n: arr.length, avg: arr.length ? Math.round(arr.reduce((s, x) => s + x.score.total, 0) / arr.length) : null }; }).filter(x => x.n).sort((a, b) => b.avg - a.avg);
-      $("rank-list").innerHTML = byChar.map((x, i) => `<div class="rank-row ${i < 3 ? "top3" : ""}"><span>${i + 1}</span>${avatar(x.ch)}<span class="r-nick">${x.ch.name}</span><span class="r-char">${x.n}명</span><span class="r-score">${x.avg}</span></div>`).join("");
+      $("rank-list").innerHTML = byChar.map((x, i) => `<div class="rank-row ${i < 3 ? "top3" : ""}" data-pid="${ranking.find(r => r.charId === x.ch.id).pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${i + 1}</span>${avatar(x.ch)}<span class="r-nick">${x.ch.name}</span><span class="r-char">${x.n}명</span><span class="r-score">${x.avg}</span></div>`).join("");
       $("btn-final-sort-char").textContent = "학생별 순위 보기";
     } else {
-      $("rank-list").innerHTML = ranking.map((x, i) => { const ch = charOf(x.charId); return `<div class="rank-row ${i < 3 ? "top3" : ""}"><span>${i + 1}</span>${avatar(ch)}<span class="r-nick">${esc(x.nickname)}</span><span class="r-char">${ch.name}</span><span class="r-score">${x.score.total}</span></div>`; }).join("");
+      $("rank-list").innerHTML = ranking.map((x, i) => { const ch = charOf(x.charId); return `<div class="rank-row ${i < 3 ? "top3" : ""}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${i + 1}</span>${avatar(ch)}<span class="r-nick">${esc(x.nickname)}</span><span class="r-char">${ch.name}</span><span class="r-score">${x.score.total}</span></div>`; }).join("");
       $("btn-final-sort-char").textContent = "캐릭터별 평균 보기";
     }
   }
