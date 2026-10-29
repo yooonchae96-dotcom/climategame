@@ -651,16 +651,20 @@
     const choices = []; for (let i = 0; i < ROUNDS; i++) { const x = ss.results && ss.results["r" + i] && ss.results["r" + i][top.pid]; choices.push(x ? x.choice : 0); }
     const cf = E.counterfactual(ch, ss.scenarioIds.map(scenarioOf), choices);
     if (!cf) { box.classList.add("hidden"); return; }
+    // 차이(운 요소 제외)는 다시 계산한 두 값으로 구하고, 화면의 '실제'는 순위표와 같은 실제 기록 점수를 쓴다.
+    //   '만약' 점수 = 실제 기록 점수 + 차이 → 왼쪽 '실제'와 오른쪽 순위표 점수가 항상 일치
     const dMoney = cf.cf.state.money - cf.actual.state.money, dTotal = cf.cf.score.total - cf.actual.score.total;
+    const realTotal = top.score.total, realMoney = top.state.money;
+    const cfTotal = realTotal + dTotal, cfMoney = realMoney + dMoney;
     // 조건이 여럿이면 마지막만 '~다면'으로 두고 앞은 '~고'로 잇는다 (예: "남성이고 젊었다면")
     const labels = cf.vuls.map(v => v.label).join("·"), cfs = cf.vuls.map((v, i) => i < cf.vuls.length - 1 ? v.cf.replace("이었다면", "이고").replace("었다면", "고") : v.cf).join(" ");
     const cfShort = cf.vuls.map(v => v.cf.replace("이었다면", "").replace("었다면", "")).join("·");
     box.innerHTML = `<div class="cf-head">👑 1등 ${esc(top.nickname)} <small>(${ch.name} · ${labels})</small></div>
       <div class="cf-q">만약 ${cfs}?</div>
       <div class="cf-compare">
-        <div class="cf-col"><small>실제</small><b>${cf.actual.score.total}점</b><span>💰 ${cf.actual.state.money}코인</span></div>
+        <div class="cf-col"><small>실제</small><b>${realTotal}점</b><span>💰 ${realMoney}코인</span></div>
         <div class="cf-arrow">→</div>
-        <div class="cf-col cf-better"><small>${cfShort}</small><b>${cf.cf.score.total}점</b><span>💰 ${cf.cf.state.money}코인</span></div>
+        <div class="cf-col cf-better"><small>${cfShort}</small><b>${cfTotal}점</b><span>💰 ${cfMoney}코인</span></div>
       </div>
       <div class="cf-nums"><span>총점 <b>${sign(dTotal)}</b>점</span><span>재산 <b>${sign(dMoney)}</b>코인</span></div>
       <div class="cf-foot">같은 선택으로 10라운드 · 운 요소 제외</div>`;

@@ -606,6 +606,8 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
 .board-group { border-color: var(--line); }
 .s-header, .b-header { border-bottom-color: var(--line); }
 .start-actions .btn-big { background: var(--primary); }
+/* 교사 버튼: 학생 버튼과 같은 크기, 색만 주황으로 구분 */
+.start-actions #btn-role-teacher { background: var(--orange); color: var(--ink); }
 .disaster-strip, .ineq-card, .my-final, .debrief-right, .teacher-table-wrap, .cf-box, .death-row { background: var(--card); }
 .cf-box { background: var(--lime-soft); }
 .ineq-worst { background: var(--pink-soft); } .ineq-best { background: var(--lime-soft); }
