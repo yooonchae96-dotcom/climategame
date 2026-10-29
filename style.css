@@ -226,8 +226,12 @@ select { font-size: 15px; padding: 7px 10px; border: var(--border); border-radiu
 @media (prefers-reduced-motion: reduce) { .gc-num { animation: none; } }
 .death-overlay { position: absolute; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(20,20,30,.82); }
 .death-card { background: var(--card); border: var(--border); border-radius: 24px; box-shadow: 10px 10px 0 var(--line); width: min(1100px, 100%); max-height: 100%; overflow: auto; display: grid; grid-template-columns: minmax(220px, 420px) 1fr; gap: 24px; padding: 26px 30px; animation: modal-in .3s cubic-bezier(.2,.9,.3,1.2); }
-.death-img { width: 100%; aspect-ratio: 1; border: var(--border); border-radius: 20px; overflow: hidden; background: #2b2b2b; display: flex; align-items: center; justify-content: center; }
-.death-img img { width: 100%; height: 100%; object-fit: cover; }
+.death-img { width: 100%; aspect-ratio: 1; border: var(--border); border-radius: 20px; overflow: hidden; background: radial-gradient(circle at 50% 35%, #3B4A7A 0%, #1E2140 70%); display: flex; align-items: center; justify-content: center; }
+.death-img img { width: 100%; height: 100%; object-fit: contain; padding: 6%; animation: ghost-in 1.2s ease-out both, ghost-float 3.2s ease-in-out 1.2s infinite; transform-origin: 50% 60%; filter: drop-shadow(0 18px 18px rgba(0,0,0,.45)); }
+/* 유령 등장(스르르 떠오름) → 둥실둥실 떠다니며 살짝 흔들림 */
+@keyframes ghost-in { from { opacity: 0; transform: translateY(40px) scale(.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes ghost-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-16px) rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { .death-img img { animation: ghost-in .6s ease-out both; } }
 .death-emoji { font-size: 120px; }
 .death-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .death-title { font-size: clamp(26px, 3.4vw, 40px); font-weight: 900; }
