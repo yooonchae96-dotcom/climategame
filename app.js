@@ -282,7 +282,7 @@
     const ranking = finalRanking(ss);
     const me = ranking.find(x => x.pid === S.pid);
     const myRank = ranking.findIndex(x => x.pid === S.pid) + 1;
-    $("my-final").innerHTML = me ? `<div style="display:flex;gap:12px;align-items:center">${avatar(ch, 90)}<div><div class="big-rank">${myRank}등 <small style="font-size:18px">/ ${ranking.length}</small></div><div>${ch.name} · ${esc(S.player.nickname)}</div><div class="score-line">총점 ${me.score.total} = 재산 ${me.score.moneyScore} + 몸 ${me.state.body} + 마음 ${me.state.mind}</div></div></div>` + statsHTML(me.state) : "";
+    $("my-final").innerHTML = me ? `<div style="display:flex;gap:12px;align-items:center">${avatar(ch, 90)}<div><div class="big-rank">${myRank}등 <small style="font-size:18px">/ ${ranking.length}</small></div><div>${ch.name} · ${esc(S.player.nickname)}</div><div class="score-line">총점 ${me.score.total} = 재산 ${me.score.moneyScore} + 몸 ${me.state.body} + 마음 ${me.state.mind}</div>${me.dead ? `<div class="score-line">💀 ${me.state.deadRound + 1}라운드, ${esc(me.state.deadWhy || "")} 세상을 떠났다.</div>` : ""}</div></div>` + statsHTML(me.state) : "";
     qIdx = 0; renderQuestion();
     $("reflection-error").textContent = "";
   }
@@ -441,7 +441,7 @@
       const cat = DIS_CAT[sc.id] || "social";
       SOUND.bgm(SOUND.bgmFor(cat));
       if (T.lastKey !== key) {
-        closePlayerModal(); closeDeath();
+        closePlayerModal(); flushDeath();
         SOUND.sfx(SOUND.sfxFor(cat));
         $("b-disaster-where").textContent = sc.where; $("b-disaster-title").textContent = sc.title; $("b-disaster-story").textContent = sc.story;
         $("b-disaster-img").innerHTML = disasterImg(sc);
@@ -476,7 +476,7 @@
     } else if (ss.phase === "final") {
       setRejoin(true);
       SOUND.bgm("final");
-      if (T.lastKey !== "final") { closePlayerModal(); closeDeath(); SOUND.sfx("fanfare"); }
+      if (T.lastKey !== "final") { closePlayerModal(); flushDeath(); SOUND.sfx("fanfare"); }
       T.lastKey = "final";
       renderFinalBoard(ss);
       showStep(root, "b-step-final");
@@ -568,12 +568,14 @@
         SOUND.sfx(sum < 0 ? "drain" : "rise");
         // 이번 라운드에 세상을 떠난 캐릭터가 있으면 게이지가 다 움직인 뒤 전체 안내
         const died = list.filter(x => x.dead && x.deadRound === r);
-        if (died.length) T.deathTimer = setTimeout(() => showDeath(died, r), 3000);
+        if (died.length) { T.deathPending = { died, r }; T.deathTimer = setTimeout(() => showDeath(died, r), 3000); }
       }, 1000);
     }
   }
   // 사망 안내 (전자칠판 전체 화면 + 슬픈 BGM). 확인을 누르면 닫히고 결과 BGM으로 돌아감
   function showDeath(died, r) {
+    if (T.deathTimer) { clearTimeout(T.deathTimer); T.deathTimer = null; }
+    T.deathPending = null;
     const ov = $("death-overlay");
     $("death-img").innerHTML = `<img src="${imgSrc("images/announce.png")}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'death-emoji',textContent:'🕯️'}))">`;
     $("death-title").textContent = died.length === 1 ? `${charOf(died[0].charId).name}이(가) 세상을 떠났습니다` : `${died.length}명이 세상을 떠났습니다`;
@@ -582,7 +584,9 @@
     ov.classList.remove("hidden");
     SOUND.bgm("mourn");
   }
-  function closeDeath() { if (T.deathTimer) { clearTimeout(T.deathTimer); T.deathTimer = null; } const ov = $("death-overlay"); if (ov && !ov.classList.contains("hidden")) { ov.classList.add("hidden"); if (T.session && T.session.phase === "reveal") SOUND.bgm("reveal"); } }
+  // 아직 띄우지 못한 사망 안내가 있으면(교사가 안내가 뜨기 전에 다음 라운드로 넘긴 경우) 지금 바로 띄우고, 없으면 닫는다
+  function flushDeath() { if (T.deathPending) showDeath(T.deathPending.died, T.deathPending.r); else closeDeath(); }
+  function closeDeath() { if (T.deathTimer) { clearTimeout(T.deathTimer); T.deathTimer = null; } T.deathPending = null; const ov = $("death-overlay"); if (ov && !ov.classList.contains("hidden")) { ov.classList.add("hidden"); if (T.session && T.session.phase === "reveal") SOUND.bgm("reveal"); } }
   $("btn-death-close").onclick = closeDeath;
   // 대기실 참가자 모달
   function openPlayerModal(pid) {
@@ -634,7 +638,7 @@
       $("rank-list").innerHTML = byChar.map((x, i) => `<div class="rank-row ${i === 0 ? "first" : i < 3 ? "top3" : ""} ${x.avg < 0 ? "dead" : ""}" data-pid="${ranking.find(r => r.charId === x.ch.id).pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${crown(i)}${i + 1}</span>${avatar(x.ch)}<span class="r-nick">${x.ch.name}</span><span class="r-char">${x.n}명${x.deadN ? ` · 💀${x.deadN}` : ""}</span><span class="r-score">${x.avg < 0 ? "💀" : x.avg}</span></div>`).join("");
       $("btn-final-sort-char").textContent = "학생별 순위 보기";
     } else {
-      $("rank-list").innerHTML = ranking.map((x, i) => { const ch = charOf(x.charId); return `<div class="rank-row ${i === 0 ? "first" : i < 3 ? "top3" : ""} ${x.dead ? "dead" : ""}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${crown(i)}${i + 1}</span>${avatar(ch)}<span class="r-nick">${esc(x.nickname)}</span><span class="r-char">${ch.name}${x.dead ? ` · 💀 ${x.state.deadRound + 1}라운드 사망` : ""}</span><span class="r-score">${x.dead ? "💀" : x.score.total}</span></div>`; }).join("");
+      $("rank-list").innerHTML = ranking.map((x, i) => { const ch = charOf(x.charId); return `<div class="rank-row ${i === 0 ? "first" : i < 3 ? "top3" : ""} ${x.dead ? "dead" : ""}" data-pid="${x.pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기"><span>${crown(i)}${i + 1}</span>${avatar(ch)}<span class="r-nick">${esc(x.nickname)}</span><span class="r-char">${ch.name}${x.dead ? ` · 💀 ${x.state.deadRound + 1}라운드, ${esc(x.state.deadWhy || "")} 사망` : ""}</span><span class="r-score">${x.dead ? "💀" : x.score.total}</span></div>`; }).join("");
       $("btn-final-sort-char").textContent = "캐릭터별 평균 보기";
     }
     renderCounterfactual(ss, ranking);

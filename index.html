@@ -216,17 +216,6 @@
           <div class="ineq-row ineq-board" id="b-ineq"></div>
           <div class="board-grid" id="board-grid"></div>
           <div class="gauge-countdown hidden" id="gauge-countdown"><div class="gc-title">잠시 후 게이지가 바뀝니다</div><div class="gc-num" id="gc-num">3</div></div>
-          <div class="death-overlay hidden" id="death-overlay">
-            <div class="death-card">
-              <div class="death-img" id="death-img"></div>
-              <div class="death-body">
-                <div class="death-title" id="death-title"></div>
-                <div class="death-list" id="death-list"></div>
-                <p class="death-text" id="death-text"></p>
-                <button class="btn btn-big" id="btn-death-close">확인</button>
-              </div>
-            </div>
-          </div>
         </div>
         <!-- 최종 -->
         <div class="step" id="b-step-final">
@@ -237,6 +226,18 @@
               <div class="screen-foot"><button class="btn btn-ghost" id="btn-final-sort-char">캐릭터별 평균 보기</button></div>
             </div>
             <div class="rank-list" id="rank-list"></div>
+          </div>
+        </div>
+        <!-- 사망 안내: 단계(결과 공개·다음 라운드)와 상관없이 전자칠판 위에 뜨도록 단계 밖에 둠 -->
+        <div class="death-overlay hidden" id="death-overlay">
+          <div class="death-card">
+            <div class="death-img" id="death-img"></div>
+            <div class="death-body">
+              <div class="death-title" id="death-title"></div>
+              <div class="death-list" id="death-list"></div>
+              <p class="death-text" id="death-text"></p>
+              <button class="btn btn-big" id="btn-death-close">확인</button>
+            </div>
           </div>
         </div>
       </div>
