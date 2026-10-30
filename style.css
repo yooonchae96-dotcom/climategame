@@ -558,7 +558,7 @@ body { background: var(--bg); color: var(--ink); }
 .lobby-panel-title span { color: var(--ink); }
 .start-badge, .qr-notice { background: var(--lav-soft); color: var(--ink); border-color: transparent; }
 .submitted-box { background: var(--lime); border-color: transparent; border-radius: 16px; }
-.toast { background: var(--navy); box-shadow: 0 8px 24px rgba(30,33,64,.18); border-radius: 999px; }
+.toast { background: rgba(255,255,255,.88); color: var(--ink); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(30,33,64,.1); box-shadow: 0 8px 24px rgba(30,33,64,.18); border-radius: 999px; }
 /* 입력칸 */
 input[type=text], input[type=password], textarea, select { background: var(--gray); border-color: transparent; border-radius: 16px; }
 input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-visible { outline: 3px solid var(--lav); }
@@ -679,4 +679,23 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
 #screen-teacher-login .screen-foot, #screen-teacher-home .screen-foot { padding-top: 4px; }
 @media (max-width: 600px) {
   #screen-teacher-login .center-card, #screen-teacher-home .center-card { padding: 14px 14px 16px; gap: 10px; }
+}
+
+/* ---------- ⓘ 안내 버튼과 그 위에 뜨는 토스트 ---------- */
+.tip-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; margin-left: 6px; border: 0; border-radius: 50%; background: rgba(30,33,64,.12); color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 14px; font-weight: 900; font-style: italic; line-height: 1; vertical-align: middle; cursor: pointer; flex: 0 0 auto; }
+.tip-btn:hover { background: rgba(30,33,64,.22); }
+.tip-btn:focus-visible { outline: 3px solid var(--lav); }
+.b-rejoin .tip-btn { margin-left: 4px; margin-right: 2px; }
+/* 버튼 옆에 떠 있는 ⓘ: 버튼 폭은 그대로 두고 오른쪽 안쪽에 겹쳐 둠 */
+.tip-wrap { position: relative; display: block; width: 100%; }
+.tip-wrap > .btn { width: 100%; }
+.tip-float { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); margin: 0; background: rgba(255,255,255,.28); color: #fff; }
+.tip-float:hover { background: rgba(255,255,255,.45); }
+/* 기준 요소 위에 붙는 토스트: 아래 가운데 대신 지정한 좌표에, 위쪽(기본) 또는 아래쪽 */
+/* 폭은 내용에 맞추되 최대 폭은 그대로: left:50% 때문에 폭이 화면 절반으로 묶여 길쭉해지던 문제 방지 */
+.toast { width: max-content; max-width: min(92%, 640px); }
+.toast.anchored { bottom: auto; transform: translate(-50%, 0); animation: toast-fade .2s; }
+@keyframes toast-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 600px) {
+  .toast { border-radius: 14px; }
 }

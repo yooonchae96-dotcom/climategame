@@ -29,9 +29,26 @@
   document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && !b.closest(".sound-ctl") && !b.classList.contains("option")) SOUND.sfx("click"); }, true);
   // 토스트: data-tip이 있는 요소에 마우스를 올리거나 누르면 중요한 안내가 잠깐 뜬다
   const toastEl = $("toast"); let toastTimer = null, lastTip = null;
-  function showToast(msg, ms) { toastEl.textContent = msg; toastEl.classList.remove("hidden"); clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.classList.add("hidden"); lastTip = null; }, ms || 3200); }
-  document.addEventListener("mouseover", e => { const el = e.target.closest("[data-tip]"); if (el && el !== lastTip) { lastTip = el; showToast(el.dataset.tip); } });
-  document.addEventListener("click", e => { const el = e.target.closest("[data-tip]"); if (el) { lastTip = el; showToast(el.dataset.tip); } }, true);
+  // anchor(ⓘ 버튼)를 주면 그 바로 위에 띄우고, 없으면 화면 아래 가운데에 띄운다
+  function showToast(msg, ms, anchor) {
+    toastEl.textContent = msg; toastEl.classList.remove("hidden"); toastEl.classList.remove("anchored", "below"); toastEl.style.left = toastEl.style.top = toastEl.style.width = "";
+    if (anchor) {
+      const app = $("app").getBoundingClientRect(), r = anchor.getBoundingClientRect();
+      toastEl.classList.add("anchored");
+      const w = toastEl.offsetWidth, h = toastEl.offsetHeight, pad = 8;
+      toastEl.style.width = w + "px"; // left 를 옮겨도 폭이 줄어 줄바꿈되지 않도록 측정한 폭으로 고정
+      const cx = Math.min(Math.max(r.left + r.width / 2 - app.left, w / 2 + pad), app.width - w / 2 - pad);
+      const above = r.top - app.top - 10 - h;
+      if (above >= pad) { toastEl.style.top = above + "px"; }
+      else { toastEl.classList.add("below"); toastEl.style.top = (r.bottom - app.top + 10) + "px"; }
+      toastEl.style.left = cx + "px";
+    }
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.classList.add("hidden"); lastTip = null; }, ms || 3200);
+  }
+  // ⓘ 버튼은 data-for 로 가리킨 요소의 안내를, 아니면 감싸고 있는 [data-tip] 요소의 안내를 띄운다
+  const tipSrc = t => { const b = t.closest(".tip-btn"); return (b && b.dataset.for) ? $(b.dataset.for) : t.closest("[data-tip]"); };
+  document.addEventListener("mouseover", e => { const el = tipSrc(e.target); if (el && el !== lastTip) { lastTip = el; showToast(el.dataset.tip, 0, e.target.closest(".tip-btn")); } });
+  document.addEventListener("click", e => { const el = tipSrc(e.target); if (el) { lastTip = el; showToast(el.dataset.tip, 0, e.target.closest(".tip-btn")); } }, true);
 
   // ---------------- 공통 도우미 ----------------
   const charOf = id => CHARACTERS.find(c => c.id === id);

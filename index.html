@@ -70,7 +70,7 @@
           <div class="disaster-strip" id="s-disaster"></div>
           <div class="situation-box"><div class="label">내 처지</div><p id="situation-text"></p></div>
           <div class="ask-box">
-            <div class="label" data-tip="선택지의 숫자는 예상 변화예요. 잃는 쪽은 운에 따라 ±10% 정도 달라질 수 있어요.">어떻게 할까? ⓘ</div>
+            <div class="label" data-tip="선택지의 숫자는 예상 변화예요. 잃는 쪽은 운에 따라 ±10% 정도 달라질 수 있어요.">어떻게 할까? <button type="button" class="tip-btn" aria-label="안내">i</button></div>
             <div class="options" id="options"></div>
           </div>
           <div class="submitted-box hidden" id="submitted-box">✅ 제출했어요. 선생님이 결과를 공개할 때까지 기다려 주세요.</div>
@@ -132,7 +132,7 @@
     <section id="screen-teacher-home" class="screen">
       <div class="center-card">
         <h2>수업 준비</h2>
-        <button class="btn btn-big" id="btn-new-session" data-tip="20개 재난 중 10개가 무작위로 뽑혀 이번 수업의 10라운드가 됩니다.">새 수업 만들기</button>
+        <div class="tip-wrap"><button class="btn btn-big" id="btn-new-session" data-tip="20개 재난 중 10개가 무작위로 뽑혀 이번 수업의 10라운드가 됩니다.">새 수업 만들기</button><button type="button" class="tip-btn tip-float" data-for="btn-new-session" aria-label="안내">i</button></div>
         <label class="field"><span>진행 중인 수업 코드로 열기</span><input id="input-open-code" type="text" inputmode="numeric" maxlength="4" placeholder="4자리"></label>
         <p class="error" id="open-error"></p>
         <div class="screen-foot">
@@ -146,7 +146,7 @@
     <!-- ===== 교사: 진행 보드 ===== -->
     <section id="screen-board" class="screen">
       <header class="b-header">
-        <div class="b-rejoin hidden" id="b-rejoin" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr"></div></div>
+        <div class="b-rejoin hidden" id="b-rejoin" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr"></div><button type="button" class="tip-btn" aria-label="안내">i</button></div>
         <div class="b-code">수업 코드 <b id="b-code"></b></div>
         <div class="b-phase" id="b-phase"></div>
         <div class="b-count" id="b-count"></div>
@@ -154,14 +154,14 @@
           <button class="btn btn-sm btn-ghost" id="btn-b-reflections">소감</button>
           <button class="btn btn-sm btn-ghost" id="btn-b-exit">나가기</button>
         </div>
-        <div class="b-rejoin hidden" id="b-rejoin-right" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr-right"></div></div>
+        <div class="b-rejoin hidden" id="b-rejoin-right" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr-right"></div><button type="button" class="tip-btn" aria-label="안내">i</button></div>
       </header>
       <div class="b-body">
         <!-- 대기실 -->
         <div class="step" id="b-step-lobby">
           <div class="lobby-layout">
             <section class="lobby-join" data-tip="학생은 카메라로 QR을 찍거나 사이트에서 4자리 코드를 넣고 닉네임만 입력하면 참가합니다. 튕긴 학생은 같은 닉네임으로 다시 들어오면 원래 캐릭터로 이어서 합니다.">
-              <div class="lobby-panel-title">📲 수업 참가</div>
+              <div class="lobby-panel-title">📲 수업 참가 <button type="button" class="tip-btn" aria-label="안내">i</button></div>
               <div class="lobby-code-card">
                 <div class="lobby-card-label">수업 코드</div>
                 <div class="big-code" id="big-code"></div>
@@ -197,7 +197,7 @@
               <div class="big-count" id="submit-count"></div>
               <div class="label">캐릭터별 선택</div>
               <div class="char-choices" id="char-choices"></div>
-              <button class="btn btn-big" id="btn-reveal" data-tip="제출하지 않은 학생은 첫 번째 가능한 선택지로 처리됩니다.">결과 공개</button>
+              <div class="tip-wrap"><button class="btn btn-big" id="btn-reveal" data-tip="제출하지 않은 학생은 첫 번째 가능한 선택지로 처리됩니다.">결과 공개</button><button type="button" class="tip-btn tip-float" data-for="btn-reveal" aria-label="안내">i</button></div>
             </div>
           </div>
         </div>
