@@ -699,3 +699,16 @@ input:focus-visible, textarea:focus-visible, .btn:focus-visible, .chip:focus-vis
 @media (max-width: 600px) {
   .toast { border-radius: 14px; }
 }
+/* 학생 헤더 버튼: 내 상황은 라벤더, 완전 종료는 검정 바탕·흰 글자 */
+/* 배치: 왼쪽 [라운드 표시][내 상황] 같은 둥근 직사각형·같은 높이, 가운데 캐릭터·프로필, 오른쪽 끝 [완전 종료] 더 작게 */
+.s-round, #btn-my-status { order: -2; height: 36px; display: inline-flex; align-items: center; border-radius: 10px; padding: 0 12px; font-size: 16px; line-height: 1; margin: 0; box-shadow: none; }
+#btn-my-status { order: -1; background: var(--lav); color: var(--ink); }
+.btn-quit { order: 1; margin-left: auto; height: 28px; display: inline-flex; align-items: center; background: #111111; color: #FFFFFF; border-radius: 8px; padding: 0 9px; font-size: 13px; line-height: 1; box-shadow: none; }
+.btn-quit:active { background: #333333; }
+@media (max-width: 1024px) {
+  .s-profile { order: 2; flex-basis: 100%; }   /* 좁은 화면에서는 프로필(특징·게이지)을 다음 줄 전체 너비로 */
+}
+@media (max-width: 600px) {
+  .s-round, #btn-my-status { height: 30px; font-size: 13px; padding: 0 9px; }
+  .btn-quit { height: 24px; font-size: 11px; padding: 0 7px; }
+}

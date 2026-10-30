@@ -159,8 +159,11 @@
     const all = await playersRef(code).get();
     if (!mine.exists) {
       // 튕긴 학생: 같은 닉네임으로 다시 들어오면 원래 캐릭터(원래 아이디)로 이어서
-      const same = all.docs.find(d => !d.data().isBot && d.data().nickname === nick);
-      if (same) { S.pid = same.id; pdoc = playersRef(code).doc(S.pid); mine = same; }
+      const same = all.docs.find(d => !d.data().isBot && !d.data().left && d.data().nickname === nick);
+      if (same) {
+        if (Date.now() - (same.data().lastSeen || 0) < 30000) { $("join-error").textContent = "이미 접속 중인 닉네임입니다. 다른 닉네임으로 참가하세요."; return; }
+        S.pid = same.id; pdoc = playersRef(code).doc(S.pid); mine = same;
+      }
     }
     if (!mine.exists) {
       // 캐릭터 배정: 가장 적게 쓰인 캐릭터 중 무작위
@@ -185,7 +188,25 @@
     if (S.unsubP) S.unsubP();
     S.unsubP = playersRef(S.code).doc(S.pid).onSnapshot(s => { if (s.exists) { S.player = s.data(); renderStudent(); } });
     S.unsubS = sessionRef(S.code).onSnapshot(s => { if (s.exists) { S.session = s.data(); renderStudent(); } });
+    // 접속 중 신호: 10초마다 기록해 두어, 같은 닉네임으로 동시에 들어오는 것을 막는 데 씀
+    const beat = () => { playersRef(S.code).doc(S.pid).update({ lastSeen: Date.now() }).catch(() => { }); };
+    if (S.hb) clearInterval(S.hb);
+    beat(); S.hb = setInterval(beat, 10000);
   }
+  // 강제 종료: 이 캐릭터는 '나감'으로 표시되고, 이 기기의 기억을 지워 다시 QR로 들어와도 새 캐릭터로만 참가
+  $("btn-quit").onclick = async () => {
+    if (!confirm("정말 종료할까요?\n종료하면 이 캐릭터로는 다시 이어서 할 수 없고, 새 캐릭터로만 참가할 수 있습니다.")) return;
+    if (S.hb) { clearInterval(S.hb); S.hb = null; }
+    if (S.unsubS) { S.unsubS(); S.unsubS = null; }
+    if (S.unsubP) { S.unsubP(); S.unsubP = null; }
+    try { await playersRef(S.code).doc(S.pid).update({ left: true, leftAt: new Date().toISOString(), lastSeen: 0 }); } catch (e) { }
+    try { sessionStorage.removeItem("cg-code"); sessionStorage.removeItem("cg-pid"); localStorage.removeItem(pidKey(S.code)); } catch (e) { }
+    S = { code: null, pid: "p" + Math.random().toString(36).slice(2, 10), player: null, session: null, unsubS: null, unsubP: null, lastPhaseKey: null, chosen: null };
+    try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) { }
+    $("status-panel").classList.add("hidden");
+    $("input-code").value = ""; $("input-nickname").value = ""; $("join-error").textContent = "";
+    show("screen-start");
+  };
 
   function renderStudent() {
     const p = S.player, ss = S.session;

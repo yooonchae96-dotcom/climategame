@@ -92,7 +92,7 @@ const NO_LABOR = (c, what) => LOCK(c, c.mob === 0, `휠체어로는 ${what} 수 
 // ------------------------------------------------------------
 const SCENARIOS = [
   // ---------- 1 살인 폭염 ----------
-  { id: 1, title: "살인 폭염", where: "인도 델리 · 한국 · 유럽", image: "images/disaster_01.png",
+  { id: 1, title: "살인 폭염", where: "인도 델리 · 한국 · 유럽", image: "images/disaster_02.png",
     story: "델리의 낮 기온이 48도를 넘었다. 서울과 파리도 40도를 넘겼다. 거리에서 쓰러지는 사람이 늘고, 병원 응급실이 가득 찼다.",
     situation: c => c.aircon ? "너의 집에는 에어컨이 있다. 창문만 닫으면 시원하다."
       : has(c, "outdoor") ? "너(혹은 너의 가족)는 땡볕 아래서 일해야 돈을 번다. 집에는 선풍기도 없다."
@@ -116,7 +116,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 2 몬순 홍수와 산사태 ----------
-  { id: 2, title: "몬순 홍수와 산사태", where: "네팔 산간 마을", image: "images/disaster_02.png",
+  { id: 2, title: "몬순 홍수와 산사태", where: "네팔 산간 마을", image: "images/disaster_03.png",
     story: "밤사이 폭우가 쏟아졌다. 산비탈이 무너져 마을 절반이 흙더미에 묻혔다. 경보는 라디오와 휴대전화 문자로만 나왔다.",
     situation: c => c.alert === 0 ? "너는 경보를 받을 방법이 없다. 라디오도 전기도 없다."
       : c.alert <= 1 ? "경보가 왔지만 너는 그 문자를 읽지 못했거나 늦게 알았다."
@@ -138,7 +138,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 3 사이클론 해안 침수 ----------
-  { id: 3, title: "사이클론 해안 침수", where: "방글라데시 해안", image: "images/disaster_03.png",
+  { id: 3, title: "사이클론 해안 침수", where: "방글라데시 해안", image: "images/disaster_04.png",
     story: "거대한 사이클론이 상륙했다. 바닷물이 5m 높이로 밀려와 해안 마을을 덮쳤다. 사이렌이 울리고 사람들이 대피소로 달렸다.",
     situation: c => has(c, "deaf") ? "사이렌이 울렸지만 너는 듣지 못했다. 이웃이 알려 줄 때까지 몰랐다."
       : has(c, "stairs") ? "대피소는 계단으로만 올라갈 수 있는 건물 2층이다."
@@ -162,7 +162,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 4 대피소 생활 ----------
-  { id: 4, title: "대피소 생활", where: "체육관·천막 대피소", image: "images/disaster_04.png",
+  { id: 4, title: "대피소 생활", where: "체육관·천막 대피소", image: "images/disaster_05.png",
     story: "재난 뒤 2주 동안 사람들이 체육관과 천막 대피소에서 함께 지낸다. 화장실은 멀고 불은 밤에 꺼진다. 낯선 사람들이 많다.",
     situation: c => c.viol >= 3 ? "너는 밤마다 불안하다. 누군가 천막 주변을 서성이고, 화장실 가는 길이 무섭다."
       : c.viol === 2 ? "낯선 어른들 사이에서 눈치를 본다. 물건이 자주 없어진다."
@@ -185,7 +185,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 5 대가뭄과 식량 가격 폭등 ----------
-  { id: 5, title: "대가뭄과 식량 가격 폭등", where: "케냐 북부 · 전 세계", image: "images/disaster_05.png",
+  { id: 5, title: "대가뭄과 식량 가격 폭등", where: "케냐 북부 · 전 세계", image: "images/disaster_06.png",
     story: "케냐 북부에 3년째 비가 오지 않는다. 가축이 죽고 우물이 말랐다. 전 세계 곡물값이 두 배로 뛰었다.",
     situation: c => has(c, "pastoral") ? "너의 가축이 하나둘 죽어 간다. 가축이 전 재산이다."
       : poorish(c) ? "빵 한 개 값이 두 배가 됐다. 오늘 저녁거리가 걱정이다."
@@ -207,7 +207,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 6 대형 산불 ----------
-  { id: 6, title: "대형 산불", where: "호주 · 캐나다 · 아마존", image: "images/disaster_06.png",
+  { id: 6, title: "대형 산불", where: "호주 · 캐나다 · 아마존", image: "images/disaster_07.png",
     story: "숲에서 시작된 불이 바람을 타고 도시 외곽까지 번졌다. 연기가 수백 km를 덮어 하늘이 주황색이 됐다.",
     situation: c => has(c, "forest") ? "불이 너의 마을 숲을 태우고 있다. 숲이 집이고 식량이고 약이다."
       : has(c, "bushfire") ? "너의 집 근처까지 불이 왔다. 다행히 보험이 있다."
@@ -228,7 +228,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 7 해수면 상승 ----------
-  { id: 7, title: "해수면 상승으로 섬이 잠김", where: "투발루 · 방글라데시 해안", image: "images/disaster_07.png",
+  { id: 7, title: "해수면 상승으로 섬이 잠김", where: "투발루 · 방글라데시 해안", image: "images/disaster_08.png",
     story: "바닷물이 밀려와 우물에 소금물이 섞이고 밭이 죽었다. 섬의 가장 높은 곳도 해발 4m밖에 안 된다.",
     situation: c => has(c, "island") ? "너의 섬은 몇 년 안에 사라질지 모른다. 받아 주는 나라가 없다."
       : has(c, "novisa") ? "너는 여권도 비자도 없다. 다른 나라로 갈 길이 막혀 있다."
@@ -248,7 +248,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 8 홍수 뒤 전염병 ----------
-  { id: 8, title: "홍수 뒤 전염병", where: "물이 빠진 모든 지역", image: "images/disaster_08.png",
+  { id: 8, title: "홍수 뒤 전염병", where: "물이 빠진 모든 지역", image: "images/disaster_09.png",
     story: "물이 빠진 뒤 고인 물에서 모기가 늘고, 오염된 물로 콜레라와 뎅기열이 퍼졌다. 병원마다 환자가 넘친다.",
     situation: c => c.med >= 3 ? "집 근처에 큰 병원이 있고 진료비 걱정이 없다."
       : has(c, "remote") ? "가장 가까운 병원까지 비행기로 2시간이다."
@@ -272,7 +272,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 9 한파와 대정전 ----------
-  { id: 9, title: "한파와 대정전", where: "미국 남부 · 한국 · 유럽", image: "images/disaster_09.png",
+  { id: 9, title: "한파와 대정전", where: "미국 남부 · 한국 · 유럽", image: "images/disaster_10.png",
     story: "따뜻하던 지역에 영하 15도 한파가 닥쳤다. 발전소가 얼어 전기와 수도가 끊겼다. 집 안 수도관이 터진다.",
     situation: c => has(c, "wealthy") && c.id === 1 ? "저택에는 자가 발전기가 있다. 정전을 느끼지도 못한다."
       : has(c, "elderly") && has(c, "alone") ? "혼자 사는 너에게 난방이 끊겼다. 도와줄 사람이 없다."
@@ -297,7 +297,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 10 기후 난민의 이동 ----------
-  { id: 10, title: "기후 난민의 이동", where: "국경", image: "images/disaster_10.png",
+  { id: 10, title: "기후 난민의 이동", where: "국경", image: "images/disaster_11.png",
     story: "살던 곳이 더는 사람이 살 수 없는 땅이 됐다. 수많은 사람이 국경으로 향한다. 국경은 좁게 열려 있다.",
     situation: c => has(c, "refugee") ? "너는 이미 한 번 고향을 잃었다. 또 떠나야 한다."
       : c.pass && c.money >= 150 ? "너는 여권이 있고 비행기 표를 살 수 있다."
@@ -320,7 +320,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 11 태풍 상륙과 강변 침수 ----------
-  { id: 11, title: "태풍 상륙과 강변 침수", where: "필리핀 마닐라", image: "images/disaster_11.png",
+  { id: 11, title: "태풍 상륙과 강변 침수", where: "필리핀 마닐라", image: "images/disaster_12.png",
     story: "강한 태풍이 마닐라를 지나갔다. 강물이 넘쳐 강변 저지대가 2m 깊이로 잠겼다. 사이렌이 울리고 대피 방송이 나왔다.",
     situation: c => has(c, "deaf") ? "사이렌도 방송도 너에게는 들리지 않는다. 이웃이 어깨를 두드릴 때까지 몰랐다."
       : has(c, "highrise") ? "너는 고층 아파트에 산다. 물은 1층도 넘지 못했다."
@@ -343,7 +343,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 12 우물이 마르고 물값이 오름 ----------
-  { id: 12, title: "우물이 마르고 물값이 오름", where: "네팔 산간 · 케냐 북부", image: "images/disaster_12.png",
+  { id: 12, title: "우물이 마르고 물값이 오름", where: "네팔 산간 · 케냐 북부", image: "images/disaster_13.png",
     story: "가뭄으로 마을 우물이 말랐다. 가장 가까운 물까지 왕복 4시간이다. 도시에서는 생수값이 세 배로 올랐다.",
     situation: c => has(c, "water") ? "물 길어 오는 일은 너의 몫이다. 학교 대신 하루 종일 물을 나른다."
       : poorish(c) ? "생수값이 올라 살 수가 없다."
@@ -364,7 +364,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 13 폭염 노동 금지령 ----------
-  { id: 13, title: "폭염 노동 금지령", where: "카타르 · 인도 건설 현장", image: "images/disaster_13.png",
+  { id: 13, title: "폭염 노동 금지령", where: "카타르 · 인도 건설 현장", image: "images/disaster_14.png",
     story: "정부가 낮 12시부터 3시까지 야외 노동을 금지했다. 쉬는 시간에는 임금이 나오지 않는다. 현장에는 선풍기 하나 없다.",
     situation: c => has(c, "employer") ? "너의 가문은 그 건설 현장의 고용주다. 임금을 안 줘도 손해가 없다."
       : has(c, "outdoor") ? "일을 쉬면 오늘 저녁밥이 없다. 일을 하면 쓰러질 수 있다."
@@ -387,7 +387,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 14 바다 얼음이 녹아 사냥길이 끊김 ----------
-  { id: 14, title: "바다 얼음이 녹아 사냥길이 끊김", where: "캐나다 북극 · 아마존 강", image: "images/disaster_14.png",
+  { id: 14, title: "바다 얼음이 녹아 사냥길이 끊김", where: "캐나다 북극 · 아마존 강", image: "images/disaster_15.png",
     story: "북극의 바다 얼음이 두 달 늦게 얼고 얇아졌다. 아마존에서는 강 수위가 낮아져 배가 다닐 수 없다. 전통 방식으로 식량을 구하던 사람들이 길을 잃었다.",
     situation: c => has(c, "arctic") ? "얼음이 얇아 사냥을 나가기 위험하다. 상점 식량은 비행기로 들어와 세 배 비싸다."
       : has(c, "forest") ? "강물이 줄어 물고기가 사라졌다. 카누가 바닥에 걸린다."
@@ -409,7 +409,7 @@ const SCENARIOS = [
     ] },
 
   // ---------- 15 숲을 빼앗는 벌목과 불 ----------
-  { id: 15, title: "숲을 빼앗는 벌목과 불", where: "아마존 · 케냐 초원", image: "images/disaster_15.png",
+  { id: 15, title: "숲을 빼앗는 벌목과 불", where: "아마존 · 케냐 초원", image: "images/disaster_21.png",
     story: "기업이 농장을 만들려고 숲에 불을 놓았다. 땅 문서가 없는 원주민 마을은 법의 보호를 받지 못했다.",
     situation: c => has(c, "forest") ? "너의 마을 숲이 타고 있다. 기업은 '이 땅은 우리 것'이라고 한다."
       : has(c, "pastoral") ? "가축을 먹이던 초원에 울타리가 생겼다. 들어가면 체포된다."
@@ -539,7 +539,7 @@ const SCENARIOS = [
   //         수업 개설 후 첫 게임에는 끼어들지 않는다 (engine.js drawScenarios firstGame).
   //   fatal(c): 이 라운드를 겪으면 남은 게이지와 상관없이 죽는 캐릭터와 그 이유 (부유층 — 사회적 약자가 아닌 남성·부자 캐릭터가 모두 포함됨)
   //   의도: 돈이 많으면 재난에서 거의 죽지 않는다는 인상을 유지하되, 드물게 부자도 무너질 수 있음 — 운명은 뒤집힐 수 있음 — 을 보여 준다.
-  { id: 21, title: "부유층을 향한 분노의 습격", where: "전 세계 대도시 부자 동네", image: "images/disaster_21.png", rare: 0.2,
+  { id: 21, title: "부유층을 향한 분노의 습격", where: "전 세계 대도시 부자 동네", image: "images/disaster_22.png", rare: 0.2,
     fatal: c => has(c, "wealthy") ? "성난 군중이 저택 담을 넘어 들이닥쳐" : null,
     story: "잇단 재난으로 집과 가족을 잃은 사람들이 거리로 쏟아져 나왔다. 분노는 '재난 속에서도 멀쩡했던' 부자 동네로 향했다. 경비원들이 먼저 달아났다.",
     situation: c => has(c, "wealthy") ? "너의 집은 이 도시에서 가장 눈에 띄는 집이다. 군중이 대문 앞까지 왔다."
