@@ -39,6 +39,9 @@
     });
     return out;
   }
+  // 사회적 약자가 아닌 캐릭터(남성·젊음·비장애·선진국 — 위 약자 조건이 하나도 없음)
+  //   수업 개설 후 첫 게임(firstGame)에서는 어떤 이유로도 죽지 않는다. 첫 게임이 아니면 희귀 재난(sc.fatal)로 죽을 수 있다.
+  const isPrivileged = ch => vulnerabilities(ch).length === 0;
   // 반사실 캐릭터: 약자 조건을 떼어 낸 '만약의' 캐릭터 (남성·젊음·비장애·선진국)
   function counterfactualChar(ch) {
     const c = Object.assign({}, ch, { sex: "남", age: Math.min(ch.age, 40), tags: ch.tags.filter(t => !["female", "disability", "deaf", "elderly"].includes(t)) });
@@ -88,6 +91,7 @@
   //   opts.round        라운드 번호(0부터). 7라운드(인덱스 6)까지는 몸이 0이 되어도 1로 살려 둔다. 8라운드부터 몸이 0이면 사망.
   //   opts.noLuck       운 요소 없이 계산 (반사실 비교용)
   //   opts.noStructural 구조적 불이익 없이 계산 (반사실 비교용)
+  //   opts.firstGame    수업 개설 후 첫 게임: 사회적 약자가 아닌 캐릭터는 8라운드 이후에도 절대 죽지 않는다
   function applyRound(ch, st, sc, choiceIdx, opts) {
     opts = opts || {};
     const round = opts.round === undefined ? SAFE_ROUNDS : opts.round;
@@ -108,14 +112,15 @@
     next.body = clamp(st.body + db + sx.b, 0, 100);
     next.mind = clamp(st.mind + ds + sx.s, 0, 100);
     let dead = false, deadWhy = null, rec = 0;
+    const immune = !!opts.firstGame && isPrivileged(ch);           // 첫 게임의 비약자: 죽지 않는다
     // 희귀 시나리오의 치명 규칙(sc.fatal): 8라운드부터 해당 캐릭터는 남은 게이지와 상관없이 사망
-    const fatalWhy = round >= SAFE_ROUNDS && typeof sc.fatal === "function" ? sc.fatal(c) : null;
+    const fatalWhy = !immune && round >= SAFE_ROUNDS && typeof sc.fatal === "function" ? sc.fatal(c) : null;
     if (fatalWhy) {
       dead = true; deadWhy = fatalWhy; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy;
-    } else if (round >= SAFE_ROUNDS && ch.age >= ELDERLY_RISK_AGE && EXTREME_TEMP[sc.id]) {
+    } else if (!immune && round >= SAFE_ROUNDS && ch.age >= ELDERLY_RISK_AGE && EXTREME_TEMP[sc.id]) {
       dead = true; deadWhy = `${EXTREME_TEMP[sc.id]} 속에서 갑자기 고혈압이 악화되어`; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy;
     } else if (next.body <= 0) {
-      if (round < SAFE_ROUNDS) next.body = 1;                       // 7라운드까지는 절대 죽지 않는다
+      if (round < SAFE_ROUNDS || immune) next.body = 1;            // 7라운드까지는 절대 죽지 않는다 (첫 게임의 비약자는 끝까지)
       else { dead = true; deadWhy = next.money <= 0 ? "굶주림과 병으로" : "다쳐서"; next.dead = true; next.deadRound = round; next.deadWhy = deadWhy; }
     }
     if (!dead) {
@@ -158,7 +163,8 @@
   }
 
   // 16명 전원을 같은 라운드·같은 선택으로 돌려 보기 (불평등 카드, 최종 순위용)
-  function simulateAll(scenarioList, choices, seed) {
+  function simulateAll(scenarioList, choices, seed, opts) {
+    opts = opts || {};
     // seed가 있으면 운 요소 없이 (결정적) 계산
     const origRandom = Math.random;
     if (seed !== undefined) Math.random = () => 0.5;
@@ -166,7 +172,7 @@
       let st = newState(ch);
       const rounds = [];
       scenarioList.forEach((sc, i) => {
-        const { state, result } = applyRound(ch, st, sc, choices[i], { round: i, noLuck: seed !== undefined });
+        const { state, result } = applyRound(ch, st, sc, choices[i], { round: i, noLuck: seed !== undefined, firstGame: opts.firstGame });
         rounds.push({ result, loss: lossOf(result, st) });
         st = state;
       });
@@ -179,15 +185,16 @@
   // 시나리오 20개 중 무작위 10개
   //   rare가 붙은 희귀 시나리오는 보통 뽑기에서 빠지고, 각자의 확률(rare)로만 끼어든다.
   //   끼어들 때는 8라운드 이후(SAFE_ROUNDS부터) 자리 하나를 대신 차지한다 → 치명 규칙이 실제로 작동하는 구간.
-  function drawScenarios(n) {
-    n = n || 10;
+  //   opts.firstGame 이면 희귀 시나리오는 끼어들지 않는다 (첫 게임은 불평등만 겪게).
+  function drawScenarios(n, opts) {
+    n = n || 10; opts = opts || {};
     const arr = SCENARIOS.filter(s => !s.rare);
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     const picked = arr.slice(0, n);
-    if (n > SAFE_ROUNDS) {
+    if (n > SAFE_ROUNDS && !opts.firstGame) {
       SCENARIOS.filter(s => s.rare).forEach(s => {
         if (Math.random() < s.rare) picked[SAFE_ROUNDS + Math.floor(Math.random() * (n - SAFE_ROUNDS))] = s;
       });
@@ -195,7 +202,7 @@
     return picked;
   }
 
-  const ENGINE = { newState, optionStatus, resolveChoice, applyRound, score, lossOf, simulateAll, drawScenarios, clamp, vulnerabilities, structural, counterfactual, counterfactualChar, previewEffect, SAFE_ROUNDS, DEVELOPED };
+  const ENGINE = { newState, optionStatus, resolveChoice, applyRound, score, lossOf, simulateAll, drawScenarios, clamp, vulnerabilities, structural, counterfactual, counterfactualChar, previewEffect, isPrivileged, SAFE_ROUNDS, DEVELOPED };
   if (typeof module !== "undefined") module.exports = ENGINE;
   root.ENGINE = ENGINE;
 })(typeof window !== "undefined" ? window : globalThis);

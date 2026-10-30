@@ -251,10 +251,9 @@
       $("submitted-box").classList.add("hidden");
       return;
     }
+    // 선택지에 예상 변화(💰❤️💙 수치)는 보여 주지 않는다 — 숫자만 보고 유리한 것을 고르지 않고 글을 읽고 고르게. 잠금(돈·몸 부족)은 그대로.
     const status = E.optionStatus(ch, st, sc);
-    const fx = (v, ic) => `<span class="${v < 0 ? "neg" : v > 0 ? "pos" : "zero"}">${ic} ${sign(v)}</span>`;
-    const effHTML = i => { const o = status[i]; const r = o && o.effect ? o.effect.raw : null; return r ? `<span class="opt-eff">${fx(r.m, "💰")}${fx(r.b, "❤️")}${fx(r.s, "💙")}</span>` : ""; };
-    $("options").innerHTML = status.map(o => `<button class="option ${o.lock ? "locked" : ""}" data-i="${o.index}" ${o.lock ? "disabled" : ""}><span class="opt-no">${choiceLabel(o.index)}</span><span>${o.text}</span>${effHTML(o.index)}${o.lock ? `<span class="lock-reason">🔒 ${o.lock}</span>` : ""}</button>`).join("");
+    $("options").innerHTML = status.map(o => `<button class="option ${o.lock ? "locked" : ""}" data-i="${o.index}" ${o.lock ? "disabled" : ""}><span class="opt-no">${choiceLabel(o.index)}</span><span>${o.text}</span>${o.lock ? `<span class="lock-reason">🔒 ${o.lock}</span>` : ""}</button>`).join("");
     $("options").querySelectorAll(".option:not(.locked)").forEach(b => b.onclick = () => submitChoice(+b.dataset.i));
     markChosen();
   }
@@ -382,10 +381,17 @@
   };
   $("btn-th-back").onclick = () => show("screen-start");
 
+  // 수업 개설 후 '첫 게임' 판정: 이 전자칠판에서 최근 2시간 안에 만든 수업이 없으면 첫 게임.
+  //   첫 게임에서는 사회적 약자가 아닌 캐릭터가 절대 죽지 않고(ENGINE.applyRound firstGame), 희귀 재난도 끼어들지 않는다.
+  //   같은 교시에 두 번째 판을 열면(2시간 안) 첫 게임이 아니므로 부자·남성도 낮은 확률로 죽을 수 있다.
+  const FIRST_GAME_WINDOW_MS = 2 * 60 * 60 * 1000;
+  function isFirstGameNow() { try { const t = +localStorage.getItem("cg-last-game-at") || 0; return Date.now() - t > FIRST_GAME_WINDOW_MS; } catch (e) { return true; } }
   $("btn-new-session").onclick = async () => {
     const code = String(Math.floor(1000 + Math.random() * 9000));
-    const scenarioIds = E.drawScenarios(ROUNDS).map(s => s.id);
-    await sessionRef(code).set({ code, scenarioIds, round: 0, phase: "lobby", results: {}, createdAt: new Date().toISOString() });
+    const firstGame = isFirstGameNow();
+    const scenarioIds = E.drawScenarios(ROUNDS, { firstGame }).map(s => s.id);
+    await sessionRef(code).set({ code, scenarioIds, round: 0, phase: "lobby", results: {}, firstGame, createdAt: new Date().toISOString() });
+    try { localStorage.setItem("cg-last-game-at", String(Date.now())); } catch (e) { }
     openBoard(code);
   };
   $("btn-open-session").onclick = async () => {
@@ -530,7 +536,7 @@
         choice = p.isBot ? open[Math.floor(Math.random() * open.length)].index : (open[0] ? open[0].index : 0);
         substituted = !p.isBot;
       }
-      const { state, result } = E.applyRound(ch, st, sc, choice, { round: r });
+      const { state, result } = E.applyRound(ch, st, sc, choice, { round: r, firstGame: !!ss.firstGame });
       roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: !result.skipped && (substituted || result.substituted), dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state, notes: result.notes || [], dead: !!state.dead, deadRound: state.deadRound ?? null, deadWhy: state.deadWhy || null, skipped: !!result.skipped };
     });
     results["r" + r] = roundRes;
