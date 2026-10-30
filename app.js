@@ -344,7 +344,7 @@
     const ranking = finalRanking(S.session); const me = ranking.find(x => x.pid === S.pid);
     const row = { nickname: S.player.nickname, character: charOf(S.player.charId).name, score: me ? me.score.total : 0, code: S.code, reflection: text, debrief: answers.filter(Boolean).join(" / "), submitted_at: new Date().toISOString() };
     try {
-      await reflectionsRef().doc(S.code + "_" + S.pid).set(row);
+      await reflectionsRef().doc(S.code + "_" + S.pid + (gameNoOf(S.session) > 1 ? "_g" + gameNoOf(S.session) : "")).set(row);
       $("done-text").textContent = `${S.player.nickname}님의 소감이 제출되었습니다. (${row.character}, ${row.score}점)`;
       showStep($("screen-student"), "s-step-done");
     } catch (e) { $("reflection-error").textContent = "저장에 실패했습니다. 다시 눌러 주세요."; }
@@ -381,17 +381,15 @@
   };
   $("btn-th-back").onclick = () => show("screen-start");
 
-  // 수업 개설 후 '첫 게임' 판정: 이 전자칠판에서 최근 2시간 안에 만든 수업이 없으면 첫 게임.
-  //   첫 게임에서는 사회적 약자가 아닌 캐릭터가 절대 죽지 않고(ENGINE.applyRound firstGame), 희귀 재난도 끼어들지 않는다.
-  //   같은 교시에 두 번째 판을 열면(2시간 안) 첫 게임이 아니므로 부자·남성도 낮은 확률로 죽을 수 있다.
-  const FIRST_GAME_WINDOW_MS = 2 * 60 * 60 * 1000;
-  function isFirstGameNow() { try { const t = +localStorage.getItem("cg-last-game-at") || 0; return Date.now() - t > FIRST_GAME_WINDOW_MS; } catch (e) { return true; } }
+  // 수업 코드 안의 판 번호(gameNo): 새 수업은 1판. 최종 결과에서 '같은 반으로 다시 하기'를 누르면 같은 코드로 2판, 3판…
+  //   1판(첫 게임)에서는 사회적 약자가 아닌 캐릭터가 절대 죽지 않고(ENGINE.applyRound firstGame), 희귀 재난도 끼어들지 않는다.
+  //   2판부터는 부자·남성 캐릭터도 낮은 확률(희귀 재난, 다섯 판에 한 번꼴)로 죽을 수 있다.
+  const gameNoOf = ss => (ss && ss.gameNo) || 1;
+  const isFirstGame = ss => gameNoOf(ss) === 1;
   $("btn-new-session").onclick = async () => {
     const code = String(Math.floor(1000 + Math.random() * 9000));
-    const firstGame = isFirstGameNow();
-    const scenarioIds = E.drawScenarios(ROUNDS, { firstGame }).map(s => s.id);
-    await sessionRef(code).set({ code, scenarioIds, round: 0, phase: "lobby", results: {}, firstGame, createdAt: new Date().toISOString() });
-    try { localStorage.setItem("cg-last-game-at", String(Date.now())); } catch (e) { }
+    const scenarioIds = E.drawScenarios(ROUNDS, { firstGame: true }).map(s => s.id);
+    await sessionRef(code).set({ code, scenarioIds, round: 0, phase: "lobby", results: {}, gameNo: 1, createdAt: new Date().toISOString() });
     openBoard(code);
   };
   $("btn-open-session").onclick = async () => {
@@ -444,7 +442,8 @@
   const setRejoin = on => ["b-rejoin", "b-rejoin-right"].forEach(id => $(id).classList.toggle("hidden", !on));
   function renderBoard() {
     const ss = T.session; if (!ss) return;
-    $("b-phase").textContent = ss.phase === "lobby" ? "대기실" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} 라운드 · ${PHASE_LABEL[ss.phase]}`;
+    const gameTag = gameNoOf(ss) > 1 ? ` · ${gameNoOf(ss)}번째 판` : "";
+    $("b-phase").textContent = (ss.phase === "lobby" ? "대기실" : ss.phase === "final" ? "최종 결과" : `${ss.round + 1} / ${ROUNDS} 라운드 · ${PHASE_LABEL[ss.phase]}`) + gameTag;
     $("b-count").textContent = `참가 ${T.players.length}명`;
     const root = $("screen-board");
     if (ss.phase === "lobby") {
@@ -536,7 +535,7 @@
         choice = p.isBot ? open[Math.floor(Math.random() * open.length)].index : (open[0] ? open[0].index : 0);
         substituted = !p.isBot;
       }
-      const { state, result } = E.applyRound(ch, st, sc, choice, { round: r, firstGame: !!ss.firstGame });
+      const { state, result } = E.applyRound(ch, st, sc, choice, { round: r, firstGame: isFirstGame(ss) });
       roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: !result.skipped && (substituted || result.substituted), dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state, notes: result.notes || [], dead: !!state.dead, deadRound: state.deadRound ?? null, deadWhy: state.deadWhy || null, skipped: !!result.skipped };
     });
     results["r" + r] = roundRes;
@@ -646,6 +645,19 @@
   document.addEventListener("keydown", e => { if (e.key === "Escape") closePlayerModal(); });
   document.querySelectorAll(".reveal-sort .chip").forEach(b => b.onclick = () => { T.sort = b.dataset.sort; document.querySelectorAll(".reveal-sort .chip").forEach(c => c.classList.toggle("active", c === b)); renderRevealBoard(T.session, false); fitBoard(); });
 
+  // 같은 반으로 다시 하기: 같은 코드·같은 학생·같은 캐릭터, 새 재난 10개, 결과·선택 초기화, 판 번호 +1 (2판부터 희귀 재난 가능)
+  $("btn-replay").onclick = async () => {
+    const ss = T.session; if (!ss || ss.phase !== "final") return;
+    if (!confirm("같은 반으로 다시 할까요? 지금 결과는 보드에서 사라집니다. (제출한 소감은 남습니다)")) return;
+    $("btn-replay").disabled = true;
+    try {
+      const gameNo = gameNoOf(ss) + 1;
+      const scenarioIds = E.drawScenarios(ROUNDS, { firstGame: false }).map(s => s.id);
+      await Promise.all(T.players.map(p => playersRef(T.code).doc(p.pid).update({ choices: {} })));
+      closeDeath();
+      await sessionRef(T.code).update({ scenarioIds, round: 0, phase: "lobby", results: {}, gameNo });
+    } finally { $("btn-replay").disabled = false; }
+  };
   $("btn-next-round").onclick = async () => {
     const r = T.session.round;
     if (r >= ROUNDS - 1) await sessionRef(T.code).update({ phase: "final" });
