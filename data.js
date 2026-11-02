@@ -6,6 +6,7 @@
 // ------------------------------------------------------------
 // 1. 캐릭터 16명
 //   money: 시작 재산(코인) / body: 몸 건강 / mind: 마음 건강
+//     시작 몸 점수는 여성 -10, 노인(65세 이상) -25, 장애 -20 (겹치면 합산). 부유층(파이살·올리비아·민준)은 재산이 확연히 많게 시작.
 //   숨은 수치 (학생에게는 숫자로 보이지 않음)
 //     alert   경보 수신력 0~3 (0 없음, 3 높음)
 //     mob     이동 수단 0~3 (0 휠체어·계단 불가, 1 도보, 2 자가용·스노모빌, 3 자가 비행기)
@@ -18,43 +19,43 @@
 //     tags    처지를 설명하는 꼬리표
 // ------------------------------------------------------------
 const CHARACTERS = [
-  { id: 1,  name: "파이살",  age: 17, sex: "남", place: "카타르 도하, 석유 가문 대저택", money: 500, body: 100, mind: 100, color: "#FFC300",
+  { id: 1,  name: "파이살",  age: 17, sex: "남", place: "카타르 도하, 석유 가문 대저택", money: 1000, body: 100, mind: 100, color: "#FFC300",
     traits: ["초부유층", "자가 비행기", "어디든 갈 수 있는 여권"], strength: "가족과 공동체의 결속이 강하고 손님을 극진히 대접하는 문화 속에서 자랐다.",
     alert: 3, mob: 3, guard: 2, med: 4, aid: 4, viol: 0, ins: 1, pass: 1, net: 1, aircon: 1, car: 1, tags: ["wealthy", "employer"] },
-  { id: 2,  name: "올리비아", age: 14, sex: "여", place: "호주 시드니 해변가 주택", money: 350, body: 100, mind: 100, color: "#FF5E78",
+  { id: 2,  name: "올리비아", age: 14, sex: "여", place: "호주 시드니 해변가 주택", money: 600, body: 90, mind: 100, color: "#FF5E78",
     traits: ["변호사 부모", "보험 완비", "산불 위험 지역"], strength: "바다와 숲을 사랑하고 환경 동아리에서 활동한다.",
     alert: 3, mob: 2, guard: 2, med: 3, aid: 3, viol: 0, ins: 1, pass: 1, net: 1, aircon: 1, car: 1, tags: ["wealthy", "female", "bushfire"] },
-  { id: 3,  name: "민준",    age: 15, sex: "남", place: "한국 서울 강남 아파트", money: 300, body: 100, mind: 100, color: "#00B4FF",
+  { id: 3,  name: "민준",    age: 15, sex: "남", place: "한국 서울 강남 아파트", money: 500, body: 100, mind: 100, color: "#00B4FF",
     traits: ["대기업 임원 부모", "에어컨·자가용", "고층 아파트"], strength: "빠른 인터넷과 학교 교육 덕분에 정보를 찾는 일에 익숙하다.",
     alert: 3, mob: 2, guard: 2, med: 3, aid: 3, viol: 0, ins: 1, pass: 1, net: 1, aircon: 1, car: 1, tags: ["wealthy", "highrise"] },
   { id: 4,  name: "루이",    age: 19, sex: "남", place: "프랑스 파리 시내", money: 180, body: 80, mind: 100, color: "#8E44FF",
     traits: ["중산층", "휠체어 사용", "엘리베이터 없는 건물 4층"], strength: "장애인 권리 모임에서 활동하며 시민 운동에 밝다.",
     alert: 3, mob: 0, guard: 0, med: 3, aid: 2, viol: 1, ins: 1, pass: 1, net: 1, aircon: 0, car: 0, tags: ["disability", "stairs", "alone"] },
-  { id: 5,  name: "헬가",    age: 78, sex: "여", place: "독일 뮌헨 단독주택", money: 220, body: 80, mind: 100, color: "#1DE9B6",
+  { id: 5,  name: "헬가",    age: 78, sex: "여", place: "독일 뮌헨 단독주택", money: 220, body: 65, mind: 100, color: "#1DE9B6",
     traits: ["은퇴 교사", "혼자 삶", "더위·추위에 약함"], strength: "연금이 안정적이고 이웃 모임에서 오래 활동했다.",
     alert: 2, mob: 1, guard: 0, med: 3, aid: 2, viol: 0, ins: 1, pass: 1, net: 1, aircon: 0, car: 0, tags: ["elderly", "alone", "female"] },
-  { id: 6,  name: "자스민",  age: 16, sex: "여", place: "미국 휴스턴 저지대 임대주택", money: 40, body: 100, mind: 100, color: "#FF2DAA",
+  { id: 6,  name: "자스민",  age: 16, sex: "여", place: "미국 휴스턴 저지대 임대주택", money: 40, body: 90, mind: 100, color: "#FF2DAA",
     traits: ["흑인", "엄마와 둘이 삶(엄마는 야간 근무)", "자동차·보험 없음"], strength: "교회 공동체와 이웃이 서로 돕는 동네에 산다.",
     alert: 2, mob: 1, guard: 1, med: 1, aid: 1, viol: 3, ins: 0, pass: 1, net: 1, aircon: 0, car: 0, tags: ["female", "renter", "lowland", "nightalone"] },
   { id: 7,  name: "아푸티",  age: 15, sex: "남", place: "캐나다 북극권 이누이트 마을", money: 60, body: 100, mind: 100, color: "#40E0FF",
     traits: ["원주민", "바다 얼음 사냥으로 식량 마련", "병원까지 비행기 2시간"], strength: "얼음과 날씨를 읽는 전통 지식을 할아버지에게 배웠다.",
     alert: 2, mob: 2, guard: 2, med: 1, aid: 1, viol: 0, ins: 0, pass: 1, net: 1, aircon: 0, car: 0, tags: ["indigenous", "remote", "arctic"] },
-  { id: 8,  name: "영수",    age: 82, sex: "남", place: "한국 농촌, 혼자 사는 할아버지", money: 35, body: 80, mind: 100, color: "#9CFF2E",
+  { id: 8,  name: "영수",    age: 82, sex: "남", place: "한국 농촌, 혼자 사는 할아버지", money: 35, body: 75, mind: 100, color: "#9CFF2E",
     traits: ["고령 독거", "휴대전화 문자 못 읽음", "비닐하우스 농사가 전 재산"], strength: "50년 농사 경험으로 날씨 변화를 몸으로 안다.",
     alert: 1, mob: 1, guard: 0, med: 2, aid: 2, viol: 0, ins: 0, pass: 1, net: 0, aircon: 0, car: 0, tags: ["elderly", "alone", "farmer", "korea"] },
   { id: 9,  name: "아르준",  age: 11, sex: "남", place: "인도 델리 건설 현장 옆 판자촌", money: 10, body: 100, mind: 100, color: "#FF7A00",
     traits: ["아빠가 건설 노동자", "폭염 속 야외 노동", "학교 못 감"], strength: "판자촌 아이들끼리 서로 챙기는 끈끈한 우정이 있다.",
     alert: 1, mob: 1, guard: 1, med: 1, aid: 1, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["child", "outdoor", "slum", "poor"] },
-  { id: 10, name: "사니타",  age: 13, sex: "여", place: "네팔 산간 마을 비탈 흙집", money: 8, body: 100, mind: 100, color: "#FF1E56",
+  { id: 10, name: "사니타",  age: 13, sex: "여", place: "네팔 산간 마을 비탈 흙집", money: 8, body: 90, mind: 100, color: "#FF1E56",
     traits: ["농부 딸", "라디오·전기 없음", "물 길어 오는 담당"], strength: "산길을 누구보다 잘 알고 마을 사람 모두가 서로를 안다.",
     alert: 0, mob: 1, guard: 2, med: 0, aid: 1, viol: 3, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["female", "child", "mountain", "farmer", "poor", "water"] },
   { id: 11, name: "라피크",  age: 14, sex: "남", place: "방글라데시 해안 어촌", money: 12, body: 100, mind: 100, color: "#00E5C8",
     traits: ["어부 아들", "해수면 1m 높이에 삶", "대피소까지 5km"], strength: "배를 다루고 바다를 읽는 솜씨가 좋다.",
     alert: 1, mob: 1, guard: 2, med: 1, aid: 1, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["coast", "boat", "poor", "outdoor"] },
-  { id: 12, name: "테아",    age: 12, sex: "여", place: "투발루 산호섬", money: 15, body: 100, mind: 100, color: "#C6FF00",
+  { id: 12, name: "테아",    age: 12, sex: "여", place: "투발루 산호섬", money: 15, body: 90, mind: 100, color: "#C6FF00",
     traits: ["섬 전체가 해수면 상승 위기", "다른 나라 국적 못 얻음"], strength: "섬 공동체가 노래와 춤으로 서로를 지탱한다.",
     alert: 2, mob: 1, guard: 2, med: 1, aid: 1, viol: 2, ins: 0, pass: 1, net: 0, aircon: 0, car: 0, tags: ["island", "female", "child", "novisa", "boat", "poor"] },
-  { id: 13, name: "마리셀",  age: 15, sex: "여", place: "필리핀 마닐라 강변 빈민가", money: 6, body: 100, mind: 100, color: "#FFE600",
+  { id: 13, name: "마리셀",  age: 15, sex: "여", place: "필리핀 마닐라 강변 빈민가", money: 6, body: 70, mind: 100, color: "#FFE600",
     traits: ["청각장애", "경보 사이렌 못 들음", "수화 통역 없음"], strength: "농인 친구 모임이 있고 눈치가 빠르다.",
     alert: 0, mob: 1, guard: 2, med: 0, aid: 1, viol: 3, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["deaf", "disability", "female", "slum", "lowland", "poor"] },
   { id: 14, name: "사이토티", age: 12, sex: "남", place: "케냐 북부 유목민 가정", money: 20, body: 100, mind: 100, color: "#FF3B30",
@@ -63,7 +64,7 @@ const CHARACTERS = [
   { id: 15, name: "카우에",  age: 13, sex: "남", place: "브라질 아마존 원주민 마을", money: 9, body: 100, mind: 100, color: "#00D26A",
     traits: ["원주민", "숲이 생계·집·약", "벌목·산불로 숲 사라짐"], strength: "숲의 식물과 약초를 아는 지식을 물려받았다.",
     alert: 0, mob: 1, guard: 2, med: 0, aid: 0, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["indigenous", "forest", "child", "poor", "boat"] },
-  { id: 16, name: "아미라",  age: 14, sex: "여", place: "요르단 난민 캠프 천막", money: 5, body: 100, mind: 100, color: "#2962FF",
+  { id: 16, name: "아미라",  age: 14, sex: "여", place: "요르단 난민 캠프 천막", money: 5, body: 90, mind: 100, color: "#2962FF",
     traits: ["시리아 난민, 무국적", "엄마·동생들과 삶", "천막은 홍수·폭염에 무방비"], strength: "동생들을 돌보며 캠프 안에서 또래 친구들과 수업을 열었다.",
     alert: 1, mob: 1, guard: 1, med: 0, aid: 0, viol: 4, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["refugee", "female", "child", "camp", "poor", "novisa"] },
 ];

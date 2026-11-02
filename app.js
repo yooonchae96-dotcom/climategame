@@ -140,6 +140,8 @@
 
   $("btn-role-student").onclick = () => { show("screen-join"); $("input-code").focus(); };
   const pidKey = code => "cg-pid-" + code;
+  let deviceId = null;
+  try { deviceId = localStorage.getItem("cg-device"); if (!deviceId) { deviceId = "d" + Math.random().toString(36).slice(2, 12); localStorage.setItem("cg-device", deviceId); } } catch (e) { deviceId = "d" + Math.random().toString(36).slice(2, 12); }
   function rememberPid(code) { try { sessionStorage.setItem("cg-pid", S.pid); localStorage.setItem(pidKey(code), S.pid); } catch (e) { } }
   $("btn-join-back").onclick = () => show("screen-start");
   $("btn-join").onclick = joinSession;
@@ -147,7 +149,7 @@
 
   async function joinSession() {
     const code = $("input-code").value.trim();
-    const nick = $("input-nickname").value.trim();
+    let nick = $("input-nickname").value.trim();
     if (!/^\d{4}$/.test(code)) { $("join-error").textContent = "수업 코드는 숫자 4자리입니다."; return; }
     if (nick.length < 2 || nick.length > 10) { $("join-error").textContent = "닉네임은 2~10글자로 적어 주세요."; return; }
     $("join-error").textContent = "확인 중...";
@@ -158,7 +160,16 @@
     let mine = await pdoc.get();
     const all = await playersRef(code).get();
     if (!mine.exists) {
-      // 튕긴 학생: 같은 닉네임으로 다시 들어오면 원래 캐릭터(원래 아이디)로 이어서
+      // 같은 기기에서 이미 참가한 적이 있으면(나갔다 들어오거나, 닉네임을 바꿔도) 그 캐릭터로만 이어서
+      const sameDevice = all.docs.find(d => !d.data().isBot && d.data().deviceId === deviceId);
+      if (sameDevice) {
+        S.pid = sameDevice.id; pdoc = playersRef(code).doc(S.pid); mine = sameDevice;
+        if (sameDevice.data().nickname !== nick) showToast(`이 기기는 이미 '${sameDevice.data().nickname}'(으)로 참가했습니다. 그 캐릭터로 이어서 합니다.`, 4000);
+        nick = sameDevice.data().nickname;
+      }
+    }
+    if (!mine.exists) {
+      // 튕긴 학생(다른 기기): 같은 닉네임으로 다시 들어오면 원래 캐릭터(원래 아이디)로 이어서
       const same = all.docs.find(d => !d.data().isBot && !d.data().left && d.data().nickname === nick);
       if (same) {
         if (Date.now() - (same.data().lastSeen || 0) < 30000) { $("join-error").textContent = "이미 접속 중인 닉네임입니다. 다른 닉네임으로 참가하세요."; return; }
@@ -171,9 +182,12 @@
       const min = Math.min(...CHARACTERS.map(c => used[c.id] || 0));
       const pool = CHARACTERS.filter(c => (used[c.id] || 0) === min);
       const ch = pool[Math.floor(Math.random() * pool.length)];
-      await pdoc.set({ nickname: nick, charId: ch.id, isBot: false, joinedAt: new Date().toISOString(), choices: {} });
-    } else if (mine.data().nickname !== nick) {
-      await pdoc.update({ nickname: nick });
+      await pdoc.set({ nickname: nick, charId: ch.id, isBot: false, joinedAt: new Date().toISOString(), choices: {}, deviceId });
+    } else {
+      const upd = { left: false };                       // 나갔던 사람이 돌아오면 '나감' 해제
+      if (mine.data().nickname !== nick) upd.nickname = nick;
+      if (!mine.data().deviceId) upd.deviceId = deviceId; // 예전에 만든 기록에 기기 번호 붙이기
+      await pdoc.update(upd);
     }
     S.code = code;
     try { sessionStorage.setItem("cg-code", code); } catch (e) { }
@@ -193,14 +207,14 @@
     if (S.hb) clearInterval(S.hb);
     beat(); S.hb = setInterval(beat, 10000);
   }
-  // 강제 종료: 이 캐릭터는 '나감'으로 표시되고, 이 기기의 기억을 지워 다시 QR로 들어와도 새 캐릭터로만 참가
+  // 완전 종료: 이 캐릭터는 '나감'으로 표시된다. 단, 이 기기로 다시 들어오면 같은 캐릭터로만 이어서 한다 (캐릭터 다시 뽑기 방지)
   $("btn-quit").onclick = async () => {
-    if (!confirm("정말 종료할까요?\n종료하면 이 캐릭터로는 다시 이어서 할 수 없고, 새 캐릭터로만 참가할 수 있습니다.")) return;
+    if (!confirm("정말 종료할까요?\n다시 들어와도 캐릭터는 바뀌지 않고 지금 캐릭터로 이어서 하게 됩니다.")) return;
     if (S.hb) { clearInterval(S.hb); S.hb = null; }
     if (S.unsubS) { S.unsubS(); S.unsubS = null; }
     if (S.unsubP) { S.unsubP(); S.unsubP = null; }
     try { await playersRef(S.code).doc(S.pid).update({ left: true, leftAt: new Date().toISOString(), lastSeen: 0 }); } catch (e) { }
-    try { sessionStorage.removeItem("cg-code"); sessionStorage.removeItem("cg-pid"); localStorage.removeItem(pidKey(S.code)); } catch (e) { }
+    try { sessionStorage.removeItem("cg-code"); sessionStorage.removeItem("cg-pid"); } catch (e) { }
     S = { code: null, pid: "p" + Math.random().toString(36).slice(2, 10), player: null, session: null, unsubS: null, unsubP: null, lastPhaseKey: null, chosen: null };
     try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) { }
     $("status-panel").classList.add("hidden");
@@ -559,6 +573,7 @@
       const { state, result } = E.applyRound(ch, st, sc, choice, { round: r, firstGame: isFirstGame(ss) });
       roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: !result.skipped && (substituted || result.substituted), dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state, notes: result.notes || [], dead: !!state.dead, deadRound: state.deadRound ?? null, deadWhy: state.deadWhy || null, skipped: !!result.skipped };
     });
+    applyScriptedDeaths(roundRes, ss, r, sc);
     results["r" + r] = roundRes;
     $("btn-reveal").disabled = true;
     SOUND.sfx("drum");
@@ -566,6 +581,43 @@
     await sessionRef(T.code).update({ phase: "reveal", results });
     $("btn-reveal").disabled = false;
   };
+
+  // ---------- 수업 코드별 판 번호에 따른 사망 각본 ----------
+  //   첫 번째 판: 8라운드부터 매 라운드 반드시 한 명 이상 죽는다. 자연 사망자가 없으면 사회적 약자(장애인·노인·어린이·여성·낙후 지역) 중
+  //              몸이 가장 낮은 한 명이 그 라운드 재난으로 세상을 떠난다.
+  //   두 번째 판: 8라운드에 파이살(id 1)이 반드시 죽는다 (부유층을 노린 습격).
+  //              민준(id 3, 15세)은 9라운드 이후 '어린이가 죽기 쉬운 재난'(폭염·홍수·사이클론·태풍·해수면·전염병·한파·가뭄·물 부족)이
+  //              처음 나오는 라운드에 그 재난에 맞는 사유로 죽는다. 그런 재난이 안 나오면 마지막 라운드에 재난 뒤 전염병으로 죽는다.
+  const SCRIPTED_WHY = { heat: "폭염 속에서 탈진해", cold: "추위 속에서 저체온증으로", water: "불어난 물에 휩쓸려", storm: "폭풍 속에서 다쳐", fire: "연기를 마시고", drought: "굶주림과 탈수로", social: "대피 중 얻은 병이 악화되어" };
+  const isSociallyVulnerable = ch => E.vulnerabilities(ch).length > 0 || ch.age < 15;
+  function killInRound(x, r, why) {
+    const prevBody = x.state.body - x.db;
+    x.dead = true; x.deadRound = r; x.deadWhy = why;
+    x.state = Object.assign({}, x.state, { dead: true, deadRound: r, deadWhy: why, body: 0 });
+    x.db = 0 - prevBody;
+    x.loss = Math.round(x.loss + prevBody);
+  }
+  function applyScriptedDeaths(roundRes, ss, r, sc) {
+    if (r < E.SAFE_ROUNDS) return;
+    const game = gameNoOf(ss);
+    const alive = Object.values(roundRes).filter(x => !x.dead && !x.skipped);
+    if (game === 1) {
+      const diedNow = Object.values(roundRes).some(x => x.dead && x.deadRound === r);
+      if (diedNow) return;
+      const cands = alive.filter(x => isSociallyVulnerable(charOf(x.charId)));
+      if (!cands.length) return;
+      const minBody = Math.min(...cands.map(x => x.state.body));
+      const pool = cands.filter(x => x.state.body === minBody);
+      const victim = pool[Math.floor(Math.random() * pool.length)];
+      killInRound(victim, r, SCRIPTED_WHY[DIS_CAT[sc.id] || "social"]);
+    } else if (game === 2 && r === E.SAFE_ROUNDS) {
+      alive.filter(x => x.charId === 1).forEach(x => killInRound(x, r, "부유층을 노린 습격에 휘말려"));
+    } else if (game === 2 && r > E.SAFE_ROUNDS) {
+      const CHILD_DEADLY = { 1: "폭염 속에서 열사병으로", 2: "불어난 물에 휩쓸려", 3: "사이클론 해일에 휩쓸려", 5: "굶주림에 어린 몸이 버티지 못해", 7: "밀려온 바닷물에 휩쓸려", 8: "홍수 뒤 번진 전염병에 어린 몸이 버티지 못해", 9: "정전된 집에서 저체온증으로", 11: "태풍에 불어난 강물에 휩쓸려", 12: "오염된 물을 마시고 설사병이 악화되어" };
+      const why = CHILD_DEADLY[sc.id] || (r === ROUNDS - 1 ? "재난 뒤 번진 전염병에 어린 몸이 버티지 못해" : null);
+      if (why) alive.filter(x => x.charId === 3).forEach(x => killInRound(x, r, why));
+    }
+  }
 
   // animate=true면 각 카드의 게이지가 전 라운드 값에서 지금 값으로 움직이며 숫자가 바뀜 (유령 막대로 잃은 만큼 표시)
   function renderRevealBoard(ss, animate) {
@@ -764,8 +816,8 @@
   }
   const today = () => new Date().toISOString().slice(0, 10);
   $("btn-xlsx").onclick = () => {
-    const arr = sortedRows().map(r => ({ "닉네임": r.nickname, "캐릭터": r.character, "최종 점수": r.score, "수업 코드": r.code, "제출 시각": fmtTime(r.submitted_at), "소감": r.reflection, "생각 정리": r.debrief || "" }));
-    const ws = XLSX.utils.json_to_sheet(arr); ws["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 60 }, { wch: 60 }];
+    const arr = sortedRows().map(r => ({ "학번": "", "이름": "", "닉네임": r.nickname, "캐릭터": r.character, "최종 점수": r.score, "수업 코드": r.code, "제출 시각": fmtTime(r.submitted_at), "소감": r.reflection, "생각 정리": r.debrief || "" }));
+    const ws = XLSX.utils.json_to_sheet(arr); ws["!cols"] = [{ wch: 8 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 60 }, { wch: 60 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "소감");
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     saveFile(`기후불평등게임_소감_${today()}.xlsx`, new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -796,6 +848,7 @@
           S.pid = tryPid; S.code = queryCode;
           try { sessionStorage.setItem("cg-code", queryCode); } catch (e) { }
           rememberPid(queryCode);
+          if (p.data().left) { try { await playersRef(queryCode).doc(tryPid).update({ left: false }); } catch (e) { } }
           startStudent();
           return;
         }

@@ -101,12 +101,18 @@
     const idx = resolveChoice(ch, st, sc, choiceIdx);
     const c = withState(ch, st);
     const r = sc.options[idx].effect(c);
-    // 운 요소: ±10% (소수점은 버림). 재현 가능하도록 seed 없이 간단히
-    const luck = () => opts.noLuck ? 1 : 0.9 + Math.random() * 0.2;
-    let dm = Math.round(r.m * (r.m < 0 ? luck() : 1));
-    let db = Math.round(r.b * (r.b < 0 ? luck() : 1));
-    let ds = Math.round(r.s * (r.s < 0 ? luck() : 1));
+    // 운 요소: 잃는 것도 얻는 것도 ±30% (같은 선택이라도 결과가 꽤 달라져 부유층끼리도 승부가 갈린다)
+    const luck = () => opts.noLuck ? 1 : 0.7 + Math.random() * 0.6;
+    let dm = Math.round(r.m * luck());
+    let db = Math.round(r.b * luck());
+    let ds = Math.round(r.s * luck());
     const sx = opts.noStructural ? { m: 0, b: 0, s: 0, notes: [] } : structural(ch, st);
+    // 그날의 컨디션: 몸·마음 각각 -8~+8 (돈과 무관한 요소가 순위에 영향을 주도록)
+    if (!opts.noLuck) {
+      const cb = Math.round(Math.random() * 16 - 8), cs = Math.round(Math.random() * 16 - 8);
+      sx.b += cb; sx.s += cs;
+      if (Math.abs(cb) >= 4 || Math.abs(cs) >= 4) sx.notes.push(`그날의 컨디션: 몸 ${cb >= 0 ? "+" : ""}${cb} · 마음 ${cs >= 0 ? "+" : ""}${cs}`);
+    }
     const next = Object.assign({}, st);
     next.money = clamp(st.money + dm + sx.m, 0, 99999);
     next.body = clamp(st.body + db + sx.b, 0, 100);
@@ -125,7 +131,9 @@
     }
     if (!dead) {
       // 재난과 재난 사이의 회복: 몸은 의료 접근이 좋을수록 더 회복, 마음은 조금
-      rec = 5 + (ch.med || 0) * 2;
+      //   나이: 20~40대는 회복이 빠르고(+3), 15세 미만 어린이(-1)와 65세 이상 노인(-2)은 느리다
+      const ageRec = ch.age >= 20 && ch.age <= 40 ? 3 : ch.age < 15 ? -1 : ch.age >= 65 ? -2 : 0;
+      rec = Math.max(0, 5 + (ch.med || 0) * 2 + ageRec);
       next.body = clamp(next.body + rec, 0, 100);
       next.mind = clamp(next.mind + 2, 0, 100);
       if (next.body - st.body - db - sx.b > 0) sx.notes.push(`다음 재난 전까지 쉬며 몸 +${next.body - clamp(st.body + db + sx.b, 0, 100)} 회복`);
@@ -149,10 +157,11 @@
     return { vuls, actual: run(ch, false), cf: run(counterfactualChar(ch), true) };
   }
 
-  // 최종 점수 = 남은 재산(코인 그대로) + 몸 + 마음
-  //   비율로 환산하지 않음 — 출발선의 불평등이 점수에 그대로 드러나게 하려는 의도
+  // 최종 점수 = 재산 점수(최대 50) + 몸(최대 100) + 마음(최대 100)
+  //   재산 점수 = 시작 재산 대비 남은 비율 × 50. 돈은 '얼마나 지켰나'로만 절반 비중을 갖고, 몸·마음이 승부를 가른다.
+  //   (부유층은 몸·마음을 지키기 쉬워 여전히 유리하지만, 코인 액수 자체가 순위를 정하지는 않는다)
   function score(st) {
-    const moneyScore = Math.max(0, Math.round(st.money));
+    const moneyScore = Math.round(Math.min(100, st.start > 0 ? st.money / st.start * 100 : 0) * 0.5);
     return { moneyScore, total: moneyScore + st.body + st.mind };
   }
 
