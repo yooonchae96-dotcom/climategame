@@ -200,12 +200,30 @@
     show("screen-student");
     if (S.unsubS) S.unsubS();
     if (S.unsubP) S.unsubP();
-    S.unsubP = playersRef(S.code).doc(S.pid).onSnapshot(s => { if (s.exists) { S.player = s.data(); renderStudent(); } });
+    S.unsubP = playersRef(S.code).doc(S.pid).onSnapshot(s => {
+      if (s.exists && s.data().charId) { S.player = s.data(); renderStudent(); return; }
+      if (S.player) onKicked();   // 참가한 뒤에 기록이 사라졌다 → 선생님이 내보냄
+    });
     S.unsubS = sessionRef(S.code).onSnapshot(s => { if (s.exists) { S.session = s.data(); renderStudent(); } });
     // 접속 중 신호: 10초마다 기록해 두어, 같은 닉네임으로 동시에 들어오는 것을 막는 데 씀
     const beat = () => { playersRef(S.code).doc(S.pid).update({ lastSeen: Date.now() }).catch(() => { }); };
     if (S.hb) clearInterval(S.hb);
     beat(); S.hb = setInterval(beat, 10000);
+  }
+  // 선생님이 대기실에서 내보냄: 접속 신호를 멈추고 이 기기의 기록을 지운 뒤 참가 화면으로 (다시 참가하면 새 캐릭터)
+  async function onKicked() {
+    const code = S.code, pid = S.pid;
+    if (S.hb) { clearInterval(S.hb); S.hb = null; }
+    if (S.unsubS) { S.unsubS(); S.unsubS = null; }
+    if (S.unsubP) { S.unsubP(); S.unsubP = null; }
+    try { await playersRef(code).doc(pid).delete(); } catch (e) { }   // 접속 신호가 남긴 찌꺼기 기록 정리
+    try { sessionStorage.removeItem("cg-code"); sessionStorage.removeItem("cg-pid"); localStorage.removeItem(pidKey(code)); } catch (e) { }
+    S = { code: null, pid: "p" + Math.random().toString(36).slice(2, 10), player: null, session: null, unsubS: null, unsubP: null, lastPhaseKey: null, chosen: null };
+    try { sessionStorage.setItem("cg-pid", S.pid); } catch (e) { }
+    $("status-panel").classList.add("hidden");
+    $("input-code").value = code; $("input-nickname").value = ""; $("join-error").textContent = "선생님이 내보냈습니다. 닉네임을 넣고 다시 참가해 주세요.";
+    show("screen-join");
+    showToast("선생님이 내보냈습니다. 다시 참가할 수 있습니다.", 4000);
   }
   // 완전 종료: 이 캐릭터는 '나감'으로 표시된다. 단, 이 기기로 다시 들어오면 같은 캐릭터로만 이어서 한다 (캐릭터 다시 뽑기 방지)
   $("btn-quit").onclick = async () => {
@@ -357,17 +375,37 @@
   // 마지막(5번째) 질문은 소감 칸
   const REFLECTION_Q = "이 게임을 하고 '기후 불평등'에 대해 새로 알게 된 것이나 느낀 점을 적어 보세요. (소감, 50자 이상)";
   const QN = DEBRIEF_QUESTIONS.length + 1;
+  // 4번 질문(기후 위기가 오면 어떤 사람들이 더 피해를 보게 되나요?)은 선택형: 여섯 쌍에서 모두 정답을 골라야 다음 질문으로
+  const CHOICE_Q = 3;
+  const CHOICE_PAIRS = [["남성", "여성"], ["젊은이", "노인"], ["젊은이", "어린이"], ["선진국", "개발도상국"], ["국적이 있는 사람", "난민"], ["부자", "가난한 사람"]];
+  const CHOICE_ANSWER = 1;   // 각 쌍에서 오른쪽이 더 피해를 보는 쪽
+  let choicePicked = CHOICE_PAIRS.map(() => null);
+  const choiceDone = () => choicePicked.every(v => v === CHOICE_ANSWER);
+  function renderChoice() {
+    $("debrief-choice").innerHTML = CHOICE_PAIRS.map((pair, i) => `<div class="dc-row">${pair.map((t, k) => `<button type="button" class="dc-opt ${choicePicked[i] === k ? (k === CHOICE_ANSWER ? "correct" : "wrong") : ""}" data-i="${i}" data-k="${k}" ${choicePicked[i] === CHOICE_ANSWER ? "disabled" : ""}>${t}</button>`).join('<span class="dc-vs">vs</span>')}</div>`).join("")
+      + `<p class="dc-hint">${choiceDone() ? "✅ 모두 맞혔어요. 다음 질문으로 넘어갈 수 있어요." : "각 쌍에서 기후 재난에 더 피해를 보는 쪽을 고르세요. 모두 맞혀야 다음으로 넘어갑니다."}</p>`;
+    $("debrief-choice").querySelectorAll(".dc-opt").forEach(b => b.onclick = () => {
+      const i = +b.dataset.i, k = +b.dataset.k;
+      choicePicked[i] = k;
+      if (k !== CHOICE_ANSWER) showToast("다시 생각해 보세요. 재난 때 더 많이 잃는 쪽은 누구일까요?", 2500);
+      if (choiceDone()) answers[CHOICE_Q] = CHOICE_PAIRS.map(p => p[CHOICE_ANSWER]).join(", ") + " (선택형 정답)";
+      renderChoice(); $("btn-debrief-next").disabled = !choiceDone();
+    });
+  }
   function renderQuestion() {
-    const last = qIdx === QN - 1;
+    const last = qIdx === QN - 1, choice = qIdx === CHOICE_Q;
     $("debrief-q").textContent = `${qIdx + 1}. ${last ? REFLECTION_Q : DEBRIEF_QUESTIONS[qIdx]}`;
-    $("debrief-a").classList.toggle("hidden", last);
+    $("debrief-a").classList.toggle("hidden", last || choice);
+    $("debrief-choice").classList.toggle("hidden", !choice);
     $("reflection-text").classList.toggle("hidden", !last);
     $("reflection-foot").classList.toggle("hidden", !last);
-    if (!last) $("debrief-a").value = answers[qIdx] || "";
+    if (!last && !choice) $("debrief-a").value = answers[qIdx] || "";
+    if (choice) renderChoice();
+    $("btn-debrief-next").disabled = choice && !choiceDone();
     $("debrief-count").textContent = `${qIdx + 1} / ${QN}`;
     $("btn-debrief-next").textContent = last ? "처음 질문으로" : "다음 질문";
   }
-  $("btn-debrief-next").onclick = () => { if (qIdx < QN - 1) answers[qIdx] = $("debrief-a").value; qIdx = (qIdx + 1) % QN; renderQuestion(); };
+  $("btn-debrief-next").onclick = () => { if (qIdx === CHOICE_Q && !choiceDone()) return; if (qIdx < QN - 1 && qIdx !== CHOICE_Q) answers[qIdx] = $("debrief-a").value; qIdx = (qIdx + 1) % QN; renderQuestion(); };
   $("debrief-a").addEventListener("input", () => { answers[qIdx] = $("debrief-a").value; });
   $("reflection-text").addEventListener("input", () => { $("reflection-len").textContent = `${$("reflection-text").value.trim().length}자`; });
   $("btn-submit").onclick = async () => {
@@ -470,9 +508,10 @@
     show("screen-board");
     if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP();
     T.unsubS = sessionRef(code).onSnapshot(s => { if (s.exists) { T.session = s.data(); renderBoard(); } });
-    T.unsubP = playersRef(code).onSnapshot(q => { T.players = q.docs.map(d => Object.assign({ pid: d.id }, d.data())); renderBoard(); });
+    T.unsubP = playersRef(code).onSnapshot(q => { T.players = q.docs.filter(d => d.data() && d.data().charId).map(d => Object.assign({ pid: d.id }, d.data())); renderBoard(); });
   }
   $("btn-b-exit").onclick = () => { if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP(); closePlayerModal(); show("screen-teacher-home"); };
+  $("btn-b-home").onclick = () => { if (T.unsubS) T.unsubS(); if (T.unsubP) T.unsubP(); closePlayerModal(); closeDeath(); show("screen-start"); };
 
   const setRejoin = on => ["b-rejoin", "b-rejoin-right"].forEach(id => $(id).classList.toggle("hidden", !on));
   function renderBoard() {
@@ -706,6 +745,16 @@
     extra += `<div class="m-score">누적 점수 <b>${sc0.total}</b> <small>= 재산 ${sc0.moneyScore} + 몸 ${st.body} + 마음 ${st.mind}</small></div>`;
     extra += `<div class="label">지금까지 겪은 라운드</div><div class="history">${historyHTML(ss, pid) || `<p class="hint">아직 겪은 재난이 없습니다.</p>`}</div>`;
     $("m-extra").innerHTML = extra;
+    const kick = $("btn-kick");
+    kick.classList.toggle("hidden", ss.phase !== "lobby");
+    kick.onclick = async () => {
+      if (!confirm(`${p.nickname}(${ch.name})을(를) 내보낼까요?\n내보낸 학생은 다시 참가할 수 있습니다.`)) return;
+      kick.disabled = true;
+      try { await playersRef(T.code).doc(pid).delete(); } catch (e) { }
+      kick.disabled = false;
+      closePlayerModal();
+      showToast(`${p.nickname}을(를) 내보냈습니다. 다시 참가할 수 있습니다.`, 3500);
+    };
     m.classList.remove("hidden");
     SOUND.sfx("pop");
   }
@@ -718,7 +767,7 @@
   document.addEventListener("keydown", e => { if (e.key === "Escape") closePlayerModal(); });
   document.querySelectorAll(".reveal-sort .chip").forEach(b => b.onclick = () => { T.sort = b.dataset.sort; document.querySelectorAll(".reveal-sort .chip").forEach(c => c.classList.toggle("active", c === b)); renderRevealBoard(T.session, false); fitBoard(); });
 
-  // 같은 반으로 다시 하기: 같은 코드·같은 학생·같은 캐릭터, 새 재난 10개, 결과·선택 초기화, 판 번호 +1 (2판부터 희귀 재난 가능)
+  // 같은 반으로 다시 하기: 같은 코드·같은 학생, 캐릭터는 반드시 이전과 다른 것으로 재배정, 새 재난 10개, 결과·선택 초기화, 판 번호 +1 (2판부터 희귀 재난 가능)
   $("btn-replay").onclick = async () => {
     const ss = T.session; if (!ss || ss.phase !== "final") return;
     if (!confirm("같은 반으로 다시 할까요? 지금 결과는 보드에서 사라집니다. (제출한 소감은 남습니다)")) return;
@@ -726,7 +775,20 @@
     try {
       const gameNo = gameNoOf(ss) + 1;
       const scenarioIds = E.drawScenarios(ROUNDS, { firstGame: false }).map(s => s.id);
-      await Promise.all(T.players.map(p => playersRef(T.code).doc(p.pid).update({ choices: {} })));
+      // 캐릭터 재배정: 각자 지금까지 했던 캐릭터(charHistory)는 제외하고, 가장 적게 배정된 캐릭터 중 무작위. 모두 해 봤으면 직전 것만 제외.
+      const order = T.players.slice().sort(() => Math.random() - 0.5);
+      const used = {};
+      const updates = order.map(p => {
+        const history = (p.charHistory || []).concat(p.charId);
+        const fresh = CHARACTERS.filter(c => !history.includes(c.id));
+        const base = fresh.length ? fresh : CHARACTERS.filter(c => c.id !== p.charId);
+        const min = Math.min(...base.map(c => used[c.id] || 0));
+        const pool = base.filter(c => (used[c.id] || 0) === min);
+        const ch = pool[Math.floor(Math.random() * pool.length)];
+        used[ch.id] = (used[ch.id] || 0) + 1;
+        return playersRef(T.code).doc(p.pid).update({ choices: {}, charId: ch.id, charHistory: history });
+      });
+      await Promise.all(updates);
       closeDeath();
       await sessionRef(T.code).update({ scenarioIds, round: 0, phase: "lobby", results: {}, gameNo });
     } finally { $("btn-replay").disabled = false; }

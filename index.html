@@ -96,6 +96,7 @@
               <div class="label">생각 정리와 소감</div>
               <div class="debrief-q" id="debrief-q"></div>
               <textarea id="debrief-a" placeholder="답을 적어 주세요"></textarea>
+              <div class="debrief-choice hidden" id="debrief-choice"></div>
               <textarea id="reflection-text" class="hidden" placeholder="소감: 이 게임을 하고 '기후 불평등'에 대해 새로 알게 된 것이나 느낀 점 (50자 이상)"></textarea>
               <div class="debrief-nav"><span id="debrief-count"></span><button class="btn btn-sm" id="btn-debrief-next">다음 질문</button></div>
               <div class="reflection-foot hidden" id="reflection-foot"><span id="reflection-len">0자</span><button class="btn btn-big" id="btn-submit">소감 제출</button></div>
@@ -154,6 +155,7 @@
         <div class="b-tools">
           <button class="btn btn-sm btn-ghost" id="btn-b-reflections">소감</button>
           <button class="btn btn-sm btn-ghost" id="btn-b-exit">나가기</button>
+          <button class="btn btn-sm btn-ghost" id="btn-b-home">처음으로 가기</button>
         </div>
         <div class="b-rejoin hidden" id="b-rejoin-right" data-tip="튕긴 학생은 이 QR을 다시 찍고 같은 닉네임을 넣으면 원래 캐릭터로 이어서 합니다."><div class="b-rejoin-qr" id="b-rejoin-qr-right"></div><button type="button" class="tip-btn" aria-label="안내">i</button></div>
       </header>
@@ -223,7 +225,7 @@
             <div class="rank-left">
               <h2>최종 순위</h2>
               <div class="cf-box hidden" id="cf-box"></div>
-              <div class="screen-foot"><button class="btn btn-ghost" id="btn-final-sort-char">캐릭터별 평균 보기</button><button class="btn btn-big" id="btn-replay" data-tip="같은 수업 코드·같은 학생·같은 캐릭터로 새 재난 10개를 다시 겪습니다. 두 번째 판부터는 부자·남성 캐릭터도 낮은 확률로 죽을 수 있습니다.">같은 반으로 다시 하기</button></div>
+              <div class="screen-foot"><button class="btn btn-ghost" id="btn-final-sort-char">캐릭터별 평균 보기</button><button class="btn btn-big" id="btn-replay" data-tip="같은 수업 코드·같은 학생으로 새 재난 10개를 다시 겪습니다. 캐릭터는 반드시 이전과 다른 것으로 바뀝니다. 두 번째 판부터는 부자·남성 캐릭터도 낮은 확률로 죽을 수 있습니다.">게임 재시작</button></div>
             </div>
             <div class="rank-list" id="rank-list"></div>
           </div>
@@ -248,6 +250,7 @@
       <div class="modal-backdrop" id="player-modal-backdrop"></div>
       <div class="modal-card" role="dialog" aria-modal="true">
         <button class="btn btn-sm btn-ghost modal-close" id="btn-player-modal-close">닫기 ✕</button>
+        <button class="btn btn-sm btn-kick hidden" id="btn-kick" data-tip="대기실에서 이 참가자를 내보냅니다. 내보낸 학생은 다시 참가할 수 있습니다.">추방</button>
         <div class="char-layout modal-char">
           <div class="char-portrait" id="m-portrait"></div>
           <div class="char-info">
