@@ -19,22 +19,22 @@
 //     tags    처지를 설명하는 꼬리표
 // ------------------------------------------------------------
 const CHARACTERS = [
-  { id: 1,  name: "파이살",  age: 17, sex: "남", place: "카타르 도하, 석유 가문 대저택", money: 1000, body: 100, mind: 100, color: "#FFC300",
+  { id: 1,  name: "파이살",  age: 28, sex: "남", place: "카타르 도하, 석유 가문 대저택", money: 1000, body: 100, mind: 100, color: "#FFC300",
     traits: ["초부유층", "자가 비행기", "어디든 갈 수 있는 여권"], strength: "가족과 공동체의 결속이 강하고 손님을 극진히 대접하는 문화 속에서 자랐다.",
     alert: 3, mob: 3, guard: 2, med: 4, aid: 4, viol: 0, ins: 1, pass: 1, net: 1, aircon: 1, car: 1, tags: ["wealthy", "employer"] },
-  { id: 2,  name: "올리비아", age: 14, sex: "여", place: "호주 시드니 해변가 주택", money: 600, body: 90, mind: 100, color: "#FF5E78",
-    traits: ["변호사 부모", "보험 완비", "산불 위험 지역"], strength: "바다와 숲을 사랑하고 환경 동아리에서 활동한다.",
+  { id: 2,  name: "올리비아", age: 24, sex: "여", place: "호주 시드니 해변가 주택", money: 600, body: 90, mind: 100, color: "#FF5E78",
+    traits: ["변호사 부모와 함께 삶", "보험 완비", "산불 위험 지역"], strength: "바다와 숲을 사랑하고 환경 동아리에서 활동한다.",
     alert: 3, mob: 2, guard: 2, med: 3, aid: 3, viol: 0, ins: 1, pass: 1, net: 1, aircon: 1, car: 1, tags: ["wealthy", "female", "bushfire"] },
   { id: 3,  name: "민준",    age: 15, sex: "남", place: "한국 서울 강남 아파트", money: 500, body: 100, mind: 100, color: "#00B4FF",
     traits: ["대기업 임원 부모", "에어컨·자가용", "고층 아파트"], strength: "빠른 인터넷과 학교 교육 덕분에 정보를 찾는 일에 익숙하다.",
     alert: 3, mob: 2, guard: 2, med: 3, aid: 3, viol: 0, ins: 1, pass: 1, net: 1, aircon: 1, car: 1, tags: ["wealthy", "highrise"] },
-  { id: 4,  name: "루이",    age: 19, sex: "남", place: "프랑스 파리 시내", money: 180, body: 80, mind: 100, color: "#8E44FF",
+  { id: 4,  name: "루이",    age: 34, sex: "남", place: "프랑스 파리 시내", money: 180, body: 80, mind: 100, color: "#8E44FF",
     traits: ["중산층", "휠체어 사용", "엘리베이터 없는 건물 4층"], strength: "장애인 권리 모임에서 활동하며 시민 운동에 밝다.",
     alert: 3, mob: 0, guard: 0, med: 3, aid: 2, viol: 1, ins: 1, pass: 1, net: 1, aircon: 0, car: 0, tags: ["disability", "stairs", "alone"] },
   { id: 5,  name: "헬가",    age: 78, sex: "여", place: "독일 뮌헨 단독주택", money: 220, body: 65, mind: 100, color: "#1DE9B6",
     traits: ["은퇴 교사", "혼자 삶", "더위·추위에 약함"], strength: "연금이 안정적이고 이웃 모임에서 오래 활동했다.",
     alert: 2, mob: 1, guard: 0, med: 3, aid: 2, viol: 0, ins: 1, pass: 1, net: 1, aircon: 0, car: 0, tags: ["elderly", "alone", "female"] },
-  { id: 6,  name: "자스민",  age: 16, sex: "여", place: "미국 휴스턴 저지대 임대주택", money: 40, body: 90, mind: 100, color: "#FF2DAA",
+  { id: 6,  name: "자스민",  age: 22, sex: "여", place: "미국 휴스턴 저지대 임대주택", money: 40, body: 90, mind: 100, color: "#FF2DAA",
     traits: ["흑인", "엄마와 둘이 삶(엄마는 야간 근무)", "자동차·보험 없음"], strength: "교회 공동체와 이웃이 서로 돕는 동네에 산다.",
     alert: 2, mob: 1, guard: 1, med: 1, aid: 1, viol: 3, ins: 0, pass: 1, net: 1, aircon: 0, car: 0, tags: ["female", "renter", "lowland", "nightalone"] },
   { id: 7,  name: "아푸티",  age: 15, sex: "남", place: "캐나다 북극권 이누이트 마을", money: 60, body: 100, mind: 100, color: "#40E0FF",
@@ -49,21 +49,21 @@ const CHARACTERS = [
   { id: 10, name: "사니타",  age: 13, sex: "여", place: "네팔 산간 마을 비탈 흙집", money: 8, body: 90, mind: 100, color: "#FF1E56",
     traits: ["농부 딸", "라디오·전기 없음", "물 길어 오는 담당"], strength: "산길을 누구보다 잘 알고 마을 사람 모두가 서로를 안다.",
     alert: 0, mob: 1, guard: 2, med: 0, aid: 1, viol: 3, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["female", "child", "mountain", "farmer", "poor", "water"] },
-  { id: 11, name: "라피크",  age: 14, sex: "남", place: "방글라데시 해안 어촌", money: 12, body: 100, mind: 100, color: "#00E5C8",
-    traits: ["어부 아들", "해수면 1m 높이에 삶", "대피소까지 5km"], strength: "배를 다루고 바다를 읽는 솜씨가 좋다.",
+  { id: 11, name: "라피크",  age: 31, sex: "남", place: "방글라데시 해안 어촌", money: 12, body: 100, mind: 100, color: "#00E5C8",
+    traits: ["어부", "해수면 1m 높이에 삶", "대피소까지 5km"], strength: "배를 다루고 바다를 읽는 솜씨가 좋다.",
     alert: 1, mob: 1, guard: 2, med: 1, aid: 1, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["coast", "boat", "poor", "outdoor"] },
-  { id: 12, name: "테아",    age: 12, sex: "여", place: "투발루 산호섬", money: 15, body: 90, mind: 100, color: "#C6FF00",
+  { id: 12, name: "테아",    age: 23, sex: "여", place: "투발루 산호섬", money: 15, body: 90, mind: 100, color: "#C6FF00",
     traits: ["섬 전체가 해수면 상승 위기", "다른 나라 국적 못 얻음"], strength: "섬 공동체가 노래와 춤으로 서로를 지탱한다.",
-    alert: 2, mob: 1, guard: 2, med: 1, aid: 1, viol: 2, ins: 0, pass: 1, net: 0, aircon: 0, car: 0, tags: ["island", "female", "child", "novisa", "boat", "poor"] },
-  { id: 13, name: "마리셀",  age: 15, sex: "여", place: "필리핀 마닐라 강변 빈민가", money: 6, body: 70, mind: 100, color: "#FFE600",
+    alert: 2, mob: 1, guard: 2, med: 1, aid: 1, viol: 2, ins: 0, pass: 1, net: 0, aircon: 0, car: 0, tags: ["island", "female", "novisa", "boat", "poor"] },
+  { id: 13, name: "마리셀",  age: 27, sex: "여", place: "필리핀 마닐라 강변 빈민가", money: 6, body: 70, mind: 100, color: "#FFE600",
     traits: ["청각장애", "경보 사이렌 못 들음", "수화 통역 없음"], strength: "농인 친구 모임이 있고 눈치가 빠르다.",
     alert: 0, mob: 1, guard: 2, med: 0, aid: 1, viol: 3, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["deaf", "disability", "female", "slum", "lowland", "poor"] },
-  { id: 14, name: "사이토티", age: 12, sex: "남", place: "케냐 북부 유목민 가정", money: 20, body: 100, mind: 100, color: "#FF3B30",
-    traits: ["마사이족", "가축이 전 재산", "가뭄으로 우물 말라감"], strength: "먼 길을 걷는 체력과 가축을 돌보는 지식이 있다.",
-    alert: 0, mob: 1, guard: 2, med: 0, aid: 1, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["pastoral", "child", "drought", "poor", "water", "indigenous"] },
-  { id: 15, name: "카우에",  age: 13, sex: "남", place: "브라질 아마존 원주민 마을", money: 9, body: 100, mind: 100, color: "#00D26A",
+  { id: 14, name: "사이토티", age: 38, sex: "남", place: "케냐 북부 유목민 가정", money: 20, body: 100, mind: 100, color: "#FF3B30",
+    traits: ["마사이족 가장", "가축이 전 재산", "가뭄으로 우물 말라감"], strength: "먼 길을 걷는 체력과 가축을 돌보는 지식이 있다.",
+    alert: 0, mob: 1, guard: 2, med: 0, aid: 1, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["pastoral", "drought", "poor", "water", "indigenous"] },
+  { id: 15, name: "카우에",  age: 26, sex: "남", place: "브라질 아마존 원주민 마을", money: 9, body: 100, mind: 100, color: "#00D26A",
     traits: ["원주민", "숲이 생계·집·약", "벌목·산불로 숲 사라짐"], strength: "숲의 식물과 약초를 아는 지식을 물려받았다.",
-    alert: 0, mob: 1, guard: 2, med: 0, aid: 0, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["indigenous", "forest", "child", "poor", "boat"] },
+    alert: 0, mob: 1, guard: 2, med: 0, aid: 0, viol: 2, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["indigenous", "forest", "poor", "boat"] },
   { id: 16, name: "아미라",  age: 14, sex: "여", place: "요르단 난민 캠프 천막", money: 5, body: 90, mind: 100, color: "#2962FF",
     traits: ["시리아 난민, 무국적", "엄마·동생들과 삶", "천막은 홍수·폭염에 무방비"], strength: "동생들을 돌보며 캠프 안에서 또래 친구들과 수업을 열었다.",
     alert: 1, mob: 1, guard: 1, med: 0, aid: 0, viol: 4, ins: 0, pass: 0, net: 0, aircon: 0, car: 0, tags: ["refugee", "female", "child", "camp", "poor", "novisa"] },
@@ -151,7 +151,7 @@ const SCENARIOS = [
         effect: c => has(c, "deaf") ? R(-Math.round(c.money * 0.5), -40, -20, "사이렌을 못 들어 한발 늦게 출발했다. 물에 휩쓸릴 뻔했다.")
           : has(c, "stairs") ? R(-20, -30, -25, "휠체어로 계단을 오를 수 없어 대피소에 못 들어갔다.")
           : has(c, "coast") ? R(-Math.round(c.money * 0.5), -25, -15, "물이 발목까지 찬 길을 1시간 걸어 겨우 도착했다.")
-          : c.mob >= 2 ? R(-5, 0, 0, "차로 빨리 높은 곳에 갔다.")
+          : c.car ? R(-5, 0, 0, "차로 빨리 높은 곳에 갔다.")
           : has(c, "elderly") ? R(-10, -20, -10, "서두르다 넘어져 다쳤다.")
           : R(-10, -10, -5, "젖은 채 대피소에 도착했다.") },
       { text: "배를 타고 바다로 나간다", lock: c => LOCK(c, !has(c, "boat"), "배가 없다"),
@@ -189,7 +189,7 @@ const SCENARIOS = [
   { id: 5, title: "대가뭄과 식량 가격 폭등", where: "케냐 북부 · 전 세계", image: "images/disaster_06.png",
     story: "케냐 북부에 3년째 비가 오지 않는다. 가축이 죽고 우물이 말랐다. 전 세계 곡물값이 두 배로 뛰었다.",
     situation: c => has(c, "pastoral") ? "너의 가축이 하나둘 죽어 간다. 가축이 전 재산이다."
-      : poorish(c) ? "빵 한 개 값이 두 배가 됐다. 오늘 저녁거리가 걱정이다."
+      : c.money < 100 ? "빵 한 개 값이 두 배가 됐다. 오늘 저녁거리가 걱정이다."
       : "식료품값이 올랐지만 사는 데 지장은 없다.",
     options: [
       { text: "비싸도 식량을 산다", lock: () => null,
@@ -215,7 +215,7 @@ const SCENARIOS = [
       : c.car ? "연기가 심하지만 차로 멀리 피할 수 있다."
       : "연기로 숨쉬기가 힘들다. 멀리 갈 방법이 없다.",
     options: [
-      { text: "차로 멀리 대피한다", lock: c => LOCK(c, !c.car && c.mob < 2, "차가 없다"),
+      { text: "차로 멀리 대피한다", lock: c => LOCK(c, !c.car, "차가 없다"),
         effect: c => c.ins ? R(-20, 0, -5, "안전하게 피했고 피해는 보험이 처리했다.")
           : R(-25, 0, -10, "피했지만 집 걱정으로 밤을 샜다.") },
       { text: "집에 남아 불을 막는다", lock: c => NO_LABOR(c, "불을 막을"),
@@ -281,7 +281,7 @@ const SCENARIOS = [
       : poorish(c) ? "난방 기구를 살 돈이 없다. 담요뿐이다."
       : "춥지만 난방 기구를 살 수 있다.",
     options: [
-      { text: "난방 기구를 산다", lock: c => LOCK(c, c.money < 40, "난방 기구를 살 돈이 없다"),
+      { text: "난방 기구를 산다", lock: c => LOCK(c, poorish(c), "난방 기구를 살 돈이 없다"),
         effect: c => c.id === 1 ? R(-40, 0, 3, "자가 발전기가 있어 필요 없었지만 예비로 하나 더 샀다. 든든했다.")
           : R(-40, 0, 0, "난방 기구로 따뜻하게 지냈다.") },
       { text: "이웃·공공시설로 간다", lock: () => null,
@@ -302,10 +302,11 @@ const SCENARIOS = [
     story: "살던 곳이 더는 사람이 살 수 없는 땅이 됐다. 수많은 사람이 국경으로 향한다. 국경은 좁게 열려 있다.",
     situation: c => has(c, "refugee") ? "너는 이미 한 번 고향을 잃었다. 또 떠나야 한다."
       : c.pass && c.money >= 150 ? "너는 여권이 있고 비행기 표를 살 수 있다."
-      : has(c, "novisa") ? "너에게는 여권이 없다. 합법적으로 국경을 넘을 길이 없다."
+      : !c.pass ? "너에게는 여권이 없다. 합법적으로 국경을 넘을 길이 없다."
+      : has(c, "novisa") ? "여권은 있지만 받아 주는 나라가 없다. 합법적으로 국경을 넘을 길이 없다."
       : "비행기 표를 살 돈이 없다. 걸어서 가야 한다.",
     options: [
-      { text: "비행기로 이민 간다", lock: c => LOCK(c, !c.pass || c.money < 150, !c.pass ? "여권이 없다" : "비행기 표와 정착금(150코인)이 없다"),
+      { text: "비행기로 이민 간다", lock: c => LOCK(c, !c.pass || has(c, "novisa") || c.money < 150, !c.pass ? "여권이 없다" : has(c, "novisa") ? "받아 주는 나라가 없다" : "비행기 표와 정착금(150코인)이 없다"),
         effect: c => R(-150, 0, -5, "비행기로 안전하게 새 나라에 갔다.") },
       { text: "걸어서·배로 국경을 넘는다", lock: () => null,
         effect: c => has(c, "refugee") ? R(-c.money, -25, -40, "두 번째 난민살이가 시작됐다. 길에서 위협을 당했다.")
@@ -329,18 +330,18 @@ const SCENARIOS = [
       : "너의 동네는 높은 곳이라 침수되지 않았다.",
     options: [
       { text: "사이렌을 듣고 고지대로 간다", lock: c => LOCK(c, has(c, "deaf"), "사이렌을 들을 수 없다"),
-        effect: c => has(c, "slum") || has(c, "lowland") ? R(-Math.round(c.money * 0.4), -10, -10, "몸은 피했지만 집 안 살림은 물에 잠겼다.")
+        effect: c => has(c, "slum") || has(c, "lowland") || has(c, "camp") ? R(-Math.round(c.money * 0.4), -10, -10, "몸은 피했지만 집 안 살림은 물에 잠겼다.")
           : c.car ? R(-5, 0, 0, "차로 빨리 높은 곳에 갔다.")
           : R(-5, -5, 0, "걸어서 고지대로 피했다.") },
       { text: "2층 이상 건물로 올라간다", lock: c => LOCK(c, c.mob === 0, "휠체어로 계단을 오를 수 없다"),
         effect: c => has(c, "highrise") || has(c, "wealthy") ? R(-5, 0, 0, "집 자체가 높아 피해는 없었다. 비상식량을 사 두느라 조금 썼다.")
           : has(c, "deaf") ? R(-c.money, -30, -20, "이웃이 알려 줘 뒤늦게 올라갔다. 이미 허리까지 물이 찼었다.")
-          : has(c, "slum") || has(c, "lowland") ? R(-Math.round(c.money * 0.5), -15, -10, "이웃 건물 2층에서 밤을 보냈다. 집은 잠겼다.")
+          : has(c, "slum") || has(c, "lowland") || has(c, "camp") ? R(-Math.round(c.money * 0.5), -15, -10, "이웃 건물 2층에서 밤을 보냈다. 집은 잠겼다.")
           : R(-5, 0, 0, "안전하게 기다렸다.") },
       { text: "집에 남아 짐을 지킨다", lock: () => null,
         effect: c => has(c, "slum") || has(c, "lowland") || has(c, "camp") ? R(-Math.round(c.money * 0.3), -35 - LABOR(c), -20, "물을 퍼내다 지쳐 쓰러졌다. 물이 지붕까지 차 구조를 기다렸다.")
           : has(c, "highrise") || has(c, "wealthy") ? R(-10, 0, 0, "집에 물은 오지 않았지만 지하 주차장의 차를 손봐야 했다.")
-          : R(-10, -15 - LABOR(c), -5, "밤새 짐을 옮기고 물을 퍼냈지만 지하실이 잠겨 물건이 젖었다.") },
+          : R(-5, -15 - LABOR(c), -5, "밤새 짐을 옮기며 집을 지켰다. 물은 들어오지 않았지만 몸이 고됐다.") },
     ] },
 
   // ---------- 12 우물이 마르고 물값이 오름 ----------
@@ -348,15 +349,16 @@ const SCENARIOS = [
     story: "가뭄으로 마을 우물이 말랐다. 가장 가까운 물까지 왕복 4시간이다. 도시에서는 생수값이 세 배로 올랐다.",
     situation: c => has(c, "water") ? "물 길어 오는 일은 너의 몫이다. 학교 대신 하루 종일 물을 나른다."
       : poorish(c) ? "생수값이 올라 살 수가 없다."
+      : c.money < 100 ? "생수값이 세 배로 올랐다. 사면 다른 데 쓸 돈이 거의 남지 않는다."
       : "수도꼭지를 틀면 물이 나온다. 생수도 살 수 있다.",
     options: [
-      { text: "생수를 산다", lock: c => LOCK(c, c.money <= 0, "생수를 살 돈이 없다"),
+      { text: "생수를 산다", lock: c => LOCK(c, poorish(c), "생수값이 올라 살 돈이 없다"),
         effect: c => c.money >= 100 ? R(-15, 0, 0, "생수를 사서 평소처럼 지냈다.")
           : R(-Math.round(c.money * 0.6), 0, -5, "물값에 돈을 거의 다 썼다.") },
       { text: "매일 물을 길어 온다", lock: () => null,
         effect: c => has(c, "water") ? R(0, -15, -15, "하루 4시간씩 물을 날랐다. 학교에 못 가고 몸이 지쳤다.")
-          : has(c, "elderly") || has(c, "disability") ? R(0, -25, -5, "무거운 물통을 나르다 몸이 상했다.")
           : c.money >= 100 ? R(-5, 0, 0, "집 수도가 끊기지 않아 길어 올 필요가 없었다.")
+          : has(c, "elderly") || has(c, "disability") ? R(0, -25, -5, "무거운 물통을 나르다 몸이 상했다.")
           : R(0, -10, -5, "먼 길을 오가며 지쳤다.") },
       { text: "더러운 물을 끓여 마신다", lock: () => null,
         effect: c => c.money >= 100 ? R(-5, 0, 0, "수돗물이 나와 그럴 필요가 없었다.")
@@ -377,7 +379,7 @@ const SCENARIOS = [
           : has(c, "outdoor") ? R(-Math.round(c.money * 0.6), -5, -15, "며칠 수입이 끊겨 먹을 것을 줄였다.")
           : c.money >= 100 ? R(0, 0, -3, "뉴스로 쓰러진 노동자 소식을 보고 마음이 무거웠다.")
           : R(-Math.round(c.money * 0.2), 0, -5, "가족 수입이 줄었다.") },
-      { text: "몰래 일한다", lock: () => null,
+      { text: "몰래 일한다", lock: c => LOCK(c, c.money >= 100 && !has(c, "outdoor") && !has(c, "employer"), "야외 노동과 상관없는 처지다"),
         effect: c => has(c, "outdoor") ? R(5, -40, -10, "일당은 받았지만 아빠(혹은 너)가 현장에서 쓰러졌다.")
           : has(c, "employer") ? R(10, 0, -5, "노동자들을 몰래 일하게 해 이익을 냈지만 한 명이 다쳤다.")
           : R(0, -10, 0, "뙤약볕에 나갔다가 더위를 먹었다.") },
@@ -392,9 +394,10 @@ const SCENARIOS = [
     story: "북극의 바다 얼음이 두 달 늦게 얼고 얇아졌다. 아마존에서는 강 수위가 낮아져 배가 다닐 수 없다. 전통 방식으로 식량을 구하던 사람들이 길을 잃었다.",
     situation: c => has(c, "arctic") ? "얼음이 얇아 사냥을 나가기 위험하다. 상점 식량은 비행기로 들어와 세 배 비싸다."
       : has(c, "forest") ? "강물이 줄어 물고기가 사라졌다. 카누가 바닥에 걸린다."
+      : has(c, "pastoral") || has(c, "coast") ? "초원과 바다에서 먹을거리를 구하기가 전보다 훨씬 힘들어졌다."
       : "너의 식탁에는 변화가 없다. 뉴스에서만 본 일이다.",
     options: [
-      { text: "전통 방식으로 식량을 구하러 나간다", lock: () => null,
+      { text: "전통 방식으로 식량을 구하러 나간다", lock: c => LOCK(c, !has(c, "arctic") && !has(c, "forest") && !has(c, "pastoral") && !has(c, "coast"), "사냥이나 채집으로 먹고살지 않는다"),
         effect: c => has(c, "arctic") ? R(0, -40, -15, "얼음이 깨져 물에 빠졌다. 간신히 구조됐다.")
           : has(c, "forest") ? R(0, -20, -15, "하루 종일 강을 헤맸지만 잡은 것이 없었다.")
           : has(c, "pastoral") || has(c, "coast") ? R(0, -15, -10, "먼 길을 갔지만 먹을 것을 구하지 못했다.")
@@ -402,9 +405,10 @@ const SCENARIOS = [
       { text: "상점에서 비싼 식량을 산다", lock: c => LOCK(c, c.money <= 0, "식량을 살 돈이 없다"),
         effect: c => has(c, "arctic") ? R(-30, 0, -10, "항공 운송 식량에 돈을 거의 다 썼다.")
           : c.money >= 100 ? R(-10, 0, 0, "평소처럼 장을 봤다.")
-          : R(-Math.round(c.money * 0.5), 0, -5, "식량값에 돈 절반이 들어갔다.") },
+          : has(c, "forest") || has(c, "pastoral") || has(c, "coast") ? R(-Math.round(c.money * 0.5), 0, -5, "식량값에 돈 절반이 들어갔다.")
+          : R(-Math.max(2, Math.round(c.money * 0.1)), 0, 0, "값이 조금 오른 식량을 샀다.") },
       { text: "정부 지원을 기다린다", lock: () => null,
-        effect: c => c.aid >= 3 ? R(0, 0, -3, "지원이 필요 없었다. 뉴스 속 굶는 마을을 보며 마음이 무거웠다.")
+        effect: c => c.aid >= 3 || !(has(c, "arctic") || has(c, "forest") || has(c, "pastoral") || has(c, "coast")) ? R(0, 0, -3, "지원이 필요 없었다. 뉴스 속 굶는 마을을 보며 마음이 무거웠다.")
           : has(c, "indigenous") ? R(0, -25, -20, "지원은 오지 않았다. 굶으며 기다렸다.")
           : R(0, -10, -10, "지원이 늦게 조금 왔다.") },
     ] },
@@ -422,11 +426,14 @@ const SCENARIOS = [
           : has(c, "pastoral") ? R(-5, -10, -20, "울타리 앞에서 쫓겨났다.")
           : has(c, "wealthy") ? R(0, 0, 5, "온라인 서명 운동에 참여했다.")
           : R(-3, 0, 3, "후원금을 조금 보냈다. 마음은 조금 나아졌다.") },
-      { text: "도시로 떠난다", lock: () => null,
+      { text: "도시로 떠난다", lock: c => LOCK(c, !has(c, "forest") && !has(c, "pastoral"), "이미 도시에 살고 있다"),
         effect: c => has(c, "forest") || has(c, "pastoral") ? R(-Math.round(c.money * 0.5), -15, -30, "도시 빈민가로 갔다. 말도 일자리도 낯설었다.")
           : R(-5, 0, 0, "이미 도시에 산다. 숲을 태워 만든 농장의 값싼 고기를 사 먹었다.") },
       { text: "기업의 보상금을 받고 땅을 넘긴다", lock: c => LOCK(c, !has(c, "forest") && !has(c, "pastoral"), "넘길 땅이 없다"),
         effect: c => R(Math.round(c.money * 0.5), -5, -35, "보상금은 시세의 10분의 1이었다. 숲과 함께 삶의 방식을 잃었다.") },
+      { text: "그 농장에서 나온 값싼 고기·콩을 산다", lock: c => LOCK(c, has(c, "forest") || has(c, "pastoral"), "너의 숲과 초원을 빼앗은 농장이다"),
+        effect: c => c.money >= 100 ? R(5, 0, -5, "값싸게 장을 봤다. 숲이 탄 자리에서 온 음식이란 걸 알면서도 샀다.")
+          : R(3, 0, -5, "값싼 음식으로 끼니를 때웠다. 누군가의 숲이 탄 대가였다.") },
     ] },
 
   // ---------- 16 식량값 폭등 뒤 도시 폭동 ----------
@@ -456,13 +463,15 @@ const SCENARIOS = [
   // ---------- 17 재난으로 학교가 1년 문을 닫음 ----------
   { id: 17, title: "재난으로 학교가 1년 문을 닫음", where: "피해 지역 전체", image: "images/disaster_17.png",
     story: "교실이 대피소로 쓰이고 교사들이 떠났다. 학교는 1년 동안 문을 닫는다. 온라인 수업이 대안이라고 한다.",
-    situation: c => c.net ? "너에게는 태블릿과 인터넷이 있다. 온라인 수업을 들을 수 있다."
+    situation: c => c.age >= 20 ? "너는 이미 학교를 졸업했다. 동네 아이들이 걱정이다."
+      : c.net ? "너에게는 태블릿과 인터넷이 있다. 온라인 수업을 들을 수 있다."
       : has(c, "female") && has(c, "child") ? "학교가 없어지자 어른들이 '이참에 결혼시키자'고 말하기 시작했다."
       : has(c, "child") ? "학교 대신 일터로 가라는 말을 듣는다."
       : "너는 이미 학교를 졸업했다. 동네 아이들이 걱정이다.",
     options: [
       { text: "온라인 수업을 듣는다", lock: c => LOCK(c, !c.net, "인터넷도 태블릿도 없다"),
-        effect: c => R(-5, 0, 0, "집에서 온라인 수업을 이어 갔다.") },
+        effect: c => c.age >= 20 ? R(-5, 0, 3, "인터넷으로 동네 아이들의 온라인 수업을 도왔다.")
+          : R(-5, 0, 0, "집에서 온라인 수업을 이어 갔다.") },
       { text: "일을 해서 가족을 돕는다", lock: () => null,
         effect: c => has(c, "child") && has(c, "outdoor") ? R(5, -20, -10, "공사장에서 일했다. 손을 다쳤다.")
           : has(c, "child") ? R(3, -10, -15, "어린 나이에 일을 시작했다. 공부는 멀어졌다.")
@@ -471,6 +480,7 @@ const SCENARIOS = [
       { text: "학교가 열릴 때까지 기다린다", lock: () => null,
         effect: c => has(c, "female") && has(c, "child") && c.viol >= 3 ? R(0, -5, -30, "조혼 압박이 시작됐다. 매일 불안하다.")
           : has(c, "child") && !c.net ? R(0, 0, -20, "1년 동안 아무것도 배우지 못했다.")
+          : c.age >= 20 ? R(0, 0, -5, "동네 아이들이 1년을 허비하는 것을 지켜봤다.")
           : R(0, 0, -5, "지루했지만 다른 방법으로 공부했다.") },
     ] },
 
@@ -503,7 +513,7 @@ const SCENARIOS = [
       : has(c, "pastoral") ? "가축에게 먹일 풀도 말라 버렸다."
       : "채소값이 올랐다. 그뿐이다.",
     options: [
-      { text: "농작물 재해 보험금을 받는다", lock: c => LOCK(c, !c.ins, "보험에 들지 않았다"),
+      { text: "농작물 재해 보험금을 받는다", lock: c => LOCK(c, !has(c, "farmer") || !c.ins, !has(c, "farmer") ? "농사를 짓지 않아 해당 없다" : "보험에 들지 않았다"),
         effect: c => R(20, 0, 0, "보험금으로 손해를 메웠다.") },
       { text: "빚을 내어 다시 심는다", lock: c => LOCK(c, !has(c, "farmer") ? true : has(c, "elderly") && poorish(c), !has(c, "farmer") ? "농사를 짓지 않아 해당 없다" : "82세라 대출이 거절됐다"),
         effect: c => R(-Math.round(c.money * 0.5), -10, -15, "빚을 냈지만 다음 수확까지 버틸 수 있을지 모른다.") },
@@ -511,6 +521,9 @@ const SCENARIOS = [
         effect: c => has(c, "farmer") ? R(-Math.round(c.money * 0.7), -10, -30, "평생 하던 농사를 접었다. 수입이 없어졌다.")
           : has(c, "pastoral") ? R(-Math.round(c.money * 0.5), -10, -20, "가축을 헐값에 팔았다.")
           : R(-5, 0, 0, "채소를 조금 비싸게 샀다.") },
+      { text: "비싼 채소 대신 다른 음식으로 때운다", lock: () => null,
+        effect: c => has(c, "farmer") ? R(0, -10, -10, "채소 대신 라면과 빵으로 버텼다. 수입도 없는데 몸까지 나빠졌다.")
+          : R(-2, -10, 0, "채소 없이 라면과 빵으로 버텼다. 돈은 아꼈지만 몸이 더부룩했다.") },
     ] },
 
   // ---------- 20 기후 피해 보상 회의 ----------
@@ -547,7 +560,7 @@ const SCENARIOS = [
       : c.money >= 100 ? "너의 동네까지는 오지 않았다. 창밖으로 연기가 보인다."
       : "너도 군중 속에 있다. 모두가 화가 나 있다.",
     options: [
-      { text: "경비를 더 고용하고 집에 숨는다", lock: c => LOCK(c, c.money < (has(c, "wealthy") ? 100 : 60), "경비를 고용할 돈이 없다"),
+      { text: "경비를 더 고용하고 집에 숨는다", lock: c => LOCK(c, c.money < (has(c, "wealthy") ? 100 : 150), "경비를 고용할 돈이 없다"),
         effect: c => has(c, "wealthy") ? R(-100, -50, -30, "경비를 더 세웠지만 경비원들도 군중 편이었다. 담은 금방 넘어왔다.")
           : R(-60, 0, -5, "돈을 쓰고 집에 숨어 지냈다.") },
       { text: "거리로 나가 사람들과 함께 선다", lock: () => null,

@@ -26,19 +26,29 @@
     if (ch.age >= 65) v.push({ key: "elderly", label: "노인", cf: "젊었다면", note: "노인: 몸이 회복되는 속도가 느렸다." });
     if (ch.tags.includes("disability")) v.push({ key: "disability", label: "장애인", cf: "비장애인이었다면", note: "장애: 이동과 의료에 돈과 체력이 더 들었다." });
     if (!DEVELOPED.includes(ch.id) || ch.tags.includes("indigenous")) v.push({ key: "developing", label: "낙후 지역", cf: "선진국 시민이었다면", note: "낙후 지역: 지원이 늦고 적게 왔다." });
+    if (ch.age < 15) v.push({ key: "child", label: "어린이", cf: "어른이었다면", note: "어린이: 스스로 지킬 힘이 약하고 어른의 결정에 끌려다닌다." });
     return v;
   }
+  // 매 라운드 조건별 불이익 (학생 화면에 항목별 수치로 그대로 보인다)
+  //   여성: 마음 -5, 재산 -3% / 노인: 몸 -4, 마음 -2 / 장애: 몸 -3, 재산 -3%(최소 2) / 낙후 지역: 마음 -4, 재산 -3% / 어린이: 몸 -2, 마음 -3
   function structural(ch, st) {
-    const out = { m: 0, b: 0, s: 0, notes: [] };
+    const out = { m: 0, b: 0, s: 0, notes: [], items: [] };
     vulnerabilities(ch).forEach(v => {
-      if (v.key === "female") { out.s -= 3; out.m -= Math.round(st.money * 0.02); }
-      if (v.key === "elderly") { out.b -= 3; }
-      if (v.key === "disability") { out.b -= 2; out.m -= Math.max(2, Math.round(st.money * 0.02)); }
-      if (v.key === "developing") { out.s -= 2; out.m -= Math.round(st.money * 0.02); }
-      out.notes.push(v.note);
+      let m = 0, b = 0, s = 0;
+      if (v.key === "female") { s = -5; m = -Math.round(st.money * 0.03); }
+      if (v.key === "elderly") { b = -4; s = -2; }
+      if (v.key === "disability") { b = -3; m = -Math.max(2, Math.round(st.money * 0.03)); }
+      if (v.key === "developing") { s = -4; m = -Math.round(st.money * 0.03); }
+      if (v.key === "child") { b = -2; s = -3; }
+      out.m += m; out.b += b; out.s += s;
+      out.items.push({ key: v.key, label: v.label, m, b, s });
+      const parts = [m ? `재산 ${m}` : "", b ? `몸 ${b}` : "", s ? `마음 ${s}` : ""].filter(Boolean).join(", ");
+      out.notes.push(`${v.label} 불이익: ${parts} — ${v.note.split(": ")[1] || v.note}`);
     });
     return out;
   }
+  // 조건별 라운드당 불이익(시작 상태 기준) — 캐릭터 카드에 미리 보여 주기 위한 값
+  function structuralPreview(ch) { return structural(ch, newState(ch)).items; }
   // 사회적 약자가 아닌 캐릭터(남성·젊음·비장애·선진국 — 위 약자 조건이 하나도 없음)
   //   수업 개설 후 첫 게임(firstGame)에서는 어떤 이유로도 죽지 않는다. 첫 게임이 아니면 희귀 재난(sc.fatal)로 죽을 수 있다.
   const isPrivileged = ch => vulnerabilities(ch).length === 0;
@@ -106,7 +116,7 @@
     let dm = Math.round(r.m * luck());
     let db = Math.round(r.b * luck());
     let ds = Math.round(r.s * luck());
-    const sx = opts.noStructural ? { m: 0, b: 0, s: 0, notes: [] } : structural(ch, st);
+    const sx = opts.noStructural ? { m: 0, b: 0, s: 0, notes: [], items: [] } : structural(ch, st);
     // 그날의 컨디션: 몸·마음 각각 -8~+8 (돈과 무관한 요소가 순위에 영향을 주도록)
     if (!opts.noLuck) {
       const cb = Math.round(Math.random() * 16 - 8), cs = Math.round(Math.random() * 16 - 8);
@@ -140,7 +150,7 @@
     }
     return {
       state: next,
-      result: { choice: idx, substituted: idx !== choiceIdx, dm: next.money - st.money, db: next.body - st.body, ds: next.mind - st.mind, why: r.why, text: sc.options[idx].text, notes: sx.notes, dead, deadRound: dead ? round : undefined, deadWhy },
+      result: { choice: idx, substituted: idx !== choiceIdx, dm: next.money - st.money, db: next.body - st.body, ds: next.mind - st.mind, why: r.why, text: sc.options[idx].text, notes: sx.notes, vul: sx.items, dead, deadRound: dead ? round : undefined, deadWhy },
     };
   }
 
@@ -211,7 +221,7 @@
     return picked;
   }
 
-  const ENGINE = { newState, optionStatus, resolveChoice, applyRound, score, lossOf, simulateAll, drawScenarios, clamp, vulnerabilities, structural, counterfactual, counterfactualChar, previewEffect, isPrivileged, SAFE_ROUNDS, DEVELOPED };
+  const ENGINE = { newState, optionStatus, resolveChoice, applyRound, score, lossOf, simulateAll, drawScenarios, clamp, vulnerabilities, structural, structuralPreview, counterfactual, counterfactualChar, previewEffect, isPrivileged, SAFE_ROUNDS, DEVELOPED };
   if (typeof module !== "undefined") module.exports = ENGINE;
   root.ENGINE = ENGINE;
 })(typeof window !== "undefined" ? window : globalThis);
