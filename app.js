@@ -345,11 +345,17 @@
     }
     $("result-choice").textContent = `${sc.title} · 내 선택: ${mine.text}${mine.substituted ? " (제출하지 않아 자동 처리됨)" : ""}`;
     const d = (v, l) => `<div class="delta ${v < 0 ? "neg" : v > 0 ? "pos" : "zero"}">${sign(v)}<small>${l}</small></div>`;
-    $("result-deltas").innerHTML = d(mine.dm, "💰 재산") + d(mine.db, "❤️ 몸") + d(mine.ds, "💙 마음");
+    const eff = mine.eff || { m: mine.dm, b: mine.db, s: mine.ds };
+    $("result-deltas").innerHTML = `<div class="label">내 선택의 결과</div><div class="deltas">${d(eff.m, "💰 재산") + d(eff.b, "❤️ 몸") + d(eff.s, "💙 마음")}</div>`;
     const vul = mine.vul || [];
     $("result-vul").innerHTML = vul.length ? `<div class="label">⚠ 사회적 불이익 (선택과 상관없이 매 라운드)</div>` + vul.map(it => `<div class="vul-line"><b>${it.label}</b><span>${[it.m ? `💰 ${it.m}` : "", it.b ? `❤️ ${it.b}` : "", it.s ? `💙 ${it.s}` : ""].filter(Boolean).join(" · ")}</span></div>`).join("") + `<div class="vul-sum">이번 라운드 불이익 합계: 💰 ${vul.reduce((a, x) => a + x.m, 0)} · ❤️ ${vul.reduce((a, x) => a + x.b, 0)} · 💙 ${vul.reduce((a, x) => a + x.s, 0)}</div>` : "";
-    const notes = (mine.notes || []).map(n => `<div>· ${esc(n)}</div>`).join("");
-    $("result-why").innerHTML = (mine.dead && mine.deadRound === r ? `<div class="dead-box">💀 ${mine.deadWhy} 세상을 떠났다. 더 이상 게임을 할 수 없다.</div>` : "") + esc(mine.why) + (notes ? `<div class="result-notes">${notes}</div>` : "");
+    const sg = v => (v > 0 ? "+" : "") + v;
+    const extra = [];
+    if (mine.cond && (mine.cond.b || mine.cond.s)) extra.push(`<div class="result-line"><b>그날의 컨디션</b><span>❤️ ${sg(mine.cond.b)} · 💙 ${sg(mine.cond.s)}</span></div>`);
+    if (mine.rec || mine.recMind) extra.push(`<div class="result-line"><b>다음 재난 전 회복</b><span>❤️ ${sg(mine.rec || 0)} · 💙 ${sg(mine.recMind || 0)}</span></div>`);
+    extra.push(`<div class="result-line result-total"><b>합계 (게이지 변화)</b><span>💰 ${sg(mine.dm)} · ❤️ ${sg(mine.db)} · 💙 ${sg(mine.ds)}</span></div>`);
+    $("result-extra").innerHTML = mine.eff ? extra.join("") : "";
+    $("result-why").innerHTML = (mine.dead && mine.deadRound === r ? `<div class="dead-box">💀 ${mine.deadWhy} 세상을 떠났다. 더 이상 게임을 할 수 없다.</div>` : "") + esc(mine.why);
     const list = Object.entries(results).map(([pid, x]) => ({ pid, loss: x.loss })).sort((a, b) => b.loss - a.loss);
     const pos = list.findIndex(x => x.pid === S.pid) + 1;
     $("class-pos").textContent = `이번 라운드에서 우리 반 ${list.length}명 중 ${pos}번째로 많이 잃었어요.`;
@@ -565,20 +571,22 @@
         $("b-disaster-img").innerHTML = disasterImg(sc);
       }
       const pickOf = p => p.choices && p.choices["r" + ss.round];
-      const done = T.players.filter(p => pickOf(p) !== undefined);
+      const deadOf = p => !!stateBefore(ss, p.pid, p.charId, ss.round).dead;   // 이번 라운드 직전까지의 상태 기준
+      const done = T.players.filter(p => pickOf(p) !== undefined && !deadOf(p));
       if (T.lastDone !== undefined && done.length > T.lastDone) SOUND.sfx("tick");
       T.lastDone = done.length;
       // 선택지별 인원
       const tally = sc.options.map(() => 0); done.forEach(p => { tally[pickOf(p)] = (tally[pickOf(p)] || 0) + 1; });
       $("b-options").innerHTML = sc.options.map((o, i) => `<div><span class="opt-no pick-${i}">${choiceLabel(i)}</span>${o.text}<span class="opt-count">${tally[i]}명</span></div>`).join("");
-      const humans = T.players.filter(p => !p.isBot);
+      const alive = T.players.filter(p => !deadOf(p)), deadCount = T.players.length - alive.length;
+      const humans = alive.filter(p => !p.isBot);
       const humansDone = done.filter(p => !p.isBot);
-      $("submit-count").textContent = humans.length ? `${humansDone.length} / ${humans.length}` : `${done.length} / ${T.players.length}`;
+      $("submit-count").innerHTML = (humans.length ? `${humansDone.length} / ${humans.length}` : `${done.length} / ${alive.length}`) + (deadCount ? `<small class="dead-count">💀 ${deadCount}명 제외</small>` : "");
       // 캐릭터별로 누가 몇 번을 골랐는지
       const byChar = {}; T.players.forEach(p => { (byChar[p.charId] = byChar[p.charId] || []).push(p); });
       $("char-choices").innerHTML = CHARACTERS.filter(ch => byChar[ch.id]).map(ch => {
         const ps = byChar[ch.id];
-        const picks = ps.map(p => { const c = pickOf(p); return `<span class="pick ${c === undefined ? "wait" : "pick-" + c}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 상황 보기"><b>${c === undefined ? (p.isBot ? "🤖" : "…") : choiceLabel(c)}</b>${c === undefined ? "" : `<span class="pick-text">${esc(sc.options[c].text)}</span>`}<small>${esc(p.nickname)}</small></span>`; }).join("");
+        const picks = ps.map(p => { if (deadOf(p)) return `<span class="pick dead" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 상황 보기"><b>💀</b><small>${esc(p.nickname)}</small></span>`; const c = pickOf(p); return `<span class="pick ${c === undefined ? "wait" : "pick-" + c}" data-pid="${p.pid}" role="button" tabindex="0" title="눌러서 상황 보기"><b>${c === undefined ? (p.isBot ? "🤖" : "…") : choiceLabel(c)}</b>${c === undefined ? "" : `<span class="pick-text">${esc(sc.options[c].text)}</span>`}<small>${esc(p.nickname)}</small></span>`; }).join("");
         return `<div class="cc-row" style="border-left-color:${ch.color}" data-pid="${ps[0].pid}" role="button" tabindex="0" title="눌러서 캐릭터 상황 보기">${avatar(ch)}<div class="cc-name">${ch.name}<small>${ps.length}명</small></div><div class="cc-picks">${picks}</div></div>`;
       }).join("");
       showStep(root, "b-step-choosing");
@@ -632,7 +640,7 @@
         substituted = !p.isBot;
       }
       const { state, result } = E.applyRound(ch, st, sc, choice, { round: r, firstGame: isFirstGame(ss) });
-      roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: !result.skipped && (substituted || result.substituted), dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state, notes: result.notes || [], vul: result.vul || [], dead: !!state.dead, deadRound: state.deadRound ?? null, deadWhy: state.deadWhy || null, skipped: !!result.skipped };
+      roundRes[p.pid] = { nickname: p.nickname, charId: p.charId, isBot: !!p.isBot, choice: result.choice, text: result.text, substituted: !result.skipped && (substituted || result.substituted), dm: result.dm, db: result.db, ds: result.ds, why: result.why, loss: Math.round(E.lossOf(result, st)), state, notes: result.notes || [], vul: result.vul || [], eff: result.eff || null, cond: result.cond || null, rec: result.rec || 0, recMind: result.recMind || 0, dead: !!state.dead, deadRound: state.deadRound ?? null, deadWhy: state.deadWhy || null, skipped: !!result.skipped };
     });
     applyScriptedDeaths(roundRes, ss, r, sc);
     results["r" + r] = roundRes;

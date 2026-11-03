@@ -181,6 +181,15 @@ select { font-size: 15px; padding: 7px 10px; border: var(--border); border-radiu
 .bcard .b-vul { font-size: .78em; color: #B8341C; background: #FFE3E8; border-radius: .5em; padding: .1em .4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bcard .b-vul b { font-variant-numeric: tabular-nums; }
 .r-vul { color: #B8341C; font-size: 12px; font-weight: 900; }
+/* 결과 항목 분리 표시 */
+.result-deltas { display: flex; flex-direction: column; gap: 6px; }
+.result-deltas .label { align-self: flex-start; }
+.result-extra { display: flex; flex-direction: column; gap: 4px; }
+.result-extra:empty { display: none; }
+.result-line { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; background: #F2F3F5; border-radius: 10px; padding: 6px 12px; font-variant-numeric: tabular-nums; }
+.result-line.result-total { background: var(--lime); font-weight: 900; }
+.dead-count { display: block; font-size: 14px; color: #B8341C; font-weight: 900; }
+.pick.dead { background: #2b2b2b; color: #fff; border-color: transparent; }
 
 .result-box { background: var(--card); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .result-choice { font-size: 16px; color: var(--muted); }

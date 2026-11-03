@@ -117,16 +117,13 @@
     let db = Math.round(r.b * luck());
     let ds = Math.round(r.s * luck());
     const sx = opts.noStructural ? { m: 0, b: 0, s: 0, notes: [], items: [] } : structural(ch, st);
-    // 그날의 컨디션: 몸·마음 각각 -8~+8 (돈과 무관한 요소가 순위에 영향을 주도록)
-    if (!opts.noLuck) {
-      const cb = Math.round(Math.random() * 16 - 8), cs = Math.round(Math.random() * 16 - 8);
-      sx.b += cb; sx.s += cs;
-      if (Math.abs(cb) >= 4 || Math.abs(cs) >= 4) sx.notes.push(`그날의 컨디션: 몸 ${cb >= 0 ? "+" : ""}${cb} · 마음 ${cs >= 0 ? "+" : ""}${cs}`);
-    }
+    // 그날의 컨디션: 몸·마음 각각 -8~+8 (돈과 무관한 요소가 순위에 영향을 주도록). 불이익과 따로 기록
+    const cond = { b: 0, s: 0 };
+    if (!opts.noLuck) { cond.b = Math.round(Math.random() * 16 - 8); cond.s = Math.round(Math.random() * 16 - 8); }
     const next = Object.assign({}, st);
     next.money = clamp(st.money + dm + sx.m, 0, 99999);
-    next.body = clamp(st.body + db + sx.b, 0, 100);
-    next.mind = clamp(st.mind + ds + sx.s, 0, 100);
+    next.body = clamp(st.body + db + sx.b + cond.b, 0, 100);
+    next.mind = clamp(st.mind + ds + sx.s + cond.s, 0, 100);
     let dead = false, deadWhy = null, rec = 0;
     const immune = !!opts.firstGame && isPrivileged(ch);           // 첫 게임의 비약자: 죽지 않는다
     // 희귀 시나리오의 치명 규칙(sc.fatal): 8라운드부터 해당 캐릭터는 남은 게이지와 상관없이 사망
@@ -146,11 +143,11 @@
       rec = Math.max(0, 5 + (ch.med || 0) * 2 + ageRec);
       next.body = clamp(next.body + rec, 0, 100);
       next.mind = clamp(next.mind + 2, 0, 100);
-      if (next.body - st.body - db - sx.b > 0) sx.notes.push(`다음 재난 전까지 쉬며 몸 +${next.body - clamp(st.body + db + sx.b, 0, 100)} 회복`);
     }
     return {
       state: next,
-      result: { choice: idx, substituted: idx !== choiceIdx, dm: next.money - st.money, db: next.body - st.body, ds: next.mind - st.mind, why: r.why, text: sc.options[idx].text, notes: sx.notes, vul: sx.items, dead, deadRound: dead ? round : undefined, deadWhy },
+      // eff: 선택 자체의 결과(운 반영, 문장 why와 짝), vul: 사회적 불이익 항목, cond: 그날의 컨디션, rec: 회복(몸, 마음 +2). dm/db/ds는 이 모두를 더한 실제 게이지 변화
+      result: { choice: idx, substituted: idx !== choiceIdx, dm: next.money - st.money, db: next.body - st.body, ds: next.mind - st.mind, eff: { m: dm, b: db, s: ds }, cond, rec: dead ? 0 : rec, recMind: dead ? 0 : 2, why: r.why, text: sc.options[idx].text, notes: sx.notes, vul: sx.items, dead, deadRound: dead ? round : undefined, deadWhy },
     };
   }
 
