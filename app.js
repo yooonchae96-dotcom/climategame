@@ -367,7 +367,9 @@
     const me = ranking.find(x => x.pid === S.pid);
     const myRank = ranking.findIndex(x => x.pid === S.pid) + 1;
     $("my-final").innerHTML = me ? `<div style="display:flex;gap:12px;align-items:center">${avatar(ch, 90)}<div><div class="big-rank">${myRank}등 <small style="font-size:18px">/ ${ranking.length}</small></div><div>${ch.name} · ${esc(S.player.nickname)}</div><div class="score-line">총점 ${me.score.total} = 재산 ${me.score.moneyScore} + 몸 ${me.state.body} + 마음 ${me.state.mind}</div>${me.dead ? `<div class="score-line">💀 ${me.state.deadRound + 1}라운드, ${esc(me.state.deadWhy || "")} 세상을 떠났다.</div>` : ""}</div></div>` + statsHTML(me.state) : "";
-    qIdx = 0; renderQuestion();
+    if (!loadDraft()) { qIdx = 0; choicePicked = CHOICE_PAIRS.map(() => null); $("reflection-text").value = ""; $("reflection-len").textContent = "0자"; }
+    else showToast("작성하던 소감을 이어서 쓸 수 있어요.", 3000);
+    renderQuestion();
     $("reflection-error").textContent = "";
   }
 
@@ -396,6 +398,34 @@
   const CHOICE_PAIRS = [["여성", "남성", 0], ["젊은이", "노인", 1], ["어린이", "젊은이", 0], ["선진국", "개발도상국", 1], ["난민", "국적이 있는 사람", 0], ["부자", "가난한 사람", 1]];
   let choicePicked = CHOICE_PAIRS.map(() => null);
   const choiceDone = () => choicePicked.every((v, i) => v === CHOICE_PAIRS[i][2]);
+  // 작성 중인 답을 기기(localStorage)와 서버(참가 기록의 draft)에 저장해 두어, 나갔다 들어와도 이어서 쓸 수 있게
+  const draftKey = () => `cg-draft-${S.code}-${S.pid}-g${gameNoOf(S.session)}`;
+  let draftTimer = null;
+  function saveDraft() {
+    if (!S.code || !S.session || S.session.phase !== "final") return;
+    const d = { answers: answers.slice(), choicePicked: choicePicked.slice(), qIdx, reflection: $("reflection-text").value, g: gameNoOf(S.session), t: Date.now() };
+    try { localStorage.setItem(draftKey(), JSON.stringify(d)); } catch (e) { }
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => { playersRef(S.code).doc(S.pid).update({ draft: d }).catch(() => { }); }, 1500);
+  }
+  function loadDraft() {
+    let local = null, remote = (S.player && S.player.draft) || null;
+    try { local = JSON.parse(localStorage.getItem(draftKey()) || "null"); } catch (e) { }
+    if (remote && remote.g !== gameNoOf(S.session)) remote = null;
+    const d = local && remote ? (local.t >= remote.t ? local : remote) : (local || remote);
+    if (!d) return false;
+    answers.length = 0; (d.answers || []).forEach((a, i) => { if (a) answers[i] = a; });
+    choicePicked = CHOICE_PAIRS.map((_, i) => (d.choicePicked && d.choicePicked[i] != null) ? d.choicePicked[i] : null);
+    qIdx = Math.min(Math.max(0, d.qIdx || 0), QN - 1);
+    $("reflection-text").value = d.reflection || "";
+    $("reflection-len").textContent = `${$("reflection-text").value.trim().length}자`;
+    return true;
+  }
+  function clearDraft() {
+    try { localStorage.removeItem(draftKey()); } catch (e) { }
+    clearTimeout(draftTimer);
+    playersRef(S.code).doc(S.pid).update({ draft: null }).catch(() => { });
+  }
   function renderChoice() {
     $("debrief-choice").innerHTML = CHOICE_PAIRS.map((pair, i) => `<div class="dc-row">${pair.slice(0, 2).map((t, k) => `<button type="button" class="dc-opt ${choicePicked[i] === k ? (k === pair[2] ? "correct" : "wrong") : ""}" data-i="${i}" data-k="${k}" ${choicePicked[i] === pair[2] ? "disabled" : ""}>${t}</button>`).join('<span class="dc-vs">vs</span>')}</div>`).join("")
       + `<p class="dc-hint">${choiceDone() ? "✅ 모두 맞혔어요. 다음 질문으로 넘어갈 수 있어요." : "각 쌍에서 기후 재난에 더 피해를 보는 쪽을 고르세요. 모두 맞혀야 다음으로 넘어갑니다."}</p>`;
@@ -405,6 +435,7 @@
       if (k !== CHOICE_PAIRS[i][2]) showToast("다시 생각해 보세요. 재난 때 더 많이 잃는 쪽은 누구일까요?", 2500);
       if (choiceDone()) answers[CHOICE_Q] = CHOICE_PAIRS.map(p => p[p[2]]).join(", ") + " (선택형 정답)";
       renderChoice(); $("btn-debrief-next").disabled = !choiceDone();
+      saveDraft();
     });
   }
   function renderQuestion() {
@@ -419,10 +450,13 @@
     $("btn-debrief-next").disabled = choice && !choiceDone();
     $("debrief-count").textContent = `${qIdx + 1} / ${QN}`;
     $("btn-debrief-next").textContent = last ? "처음 질문으로" : "다음 질문";
+    $("btn-debrief-prev").disabled = qIdx === 0;   // 이전 질문으로 돌아가 답을 고칠 수 있음
   }
-  $("btn-debrief-next").onclick = () => { if (qIdx === CHOICE_Q && !choiceDone()) return; if (qIdx < QN - 1 && qIdx !== CHOICE_Q) answers[qIdx] = $("debrief-a").value; qIdx = (qIdx + 1) % QN; renderQuestion(); };
-  $("debrief-a").addEventListener("input", () => { answers[qIdx] = $("debrief-a").value; });
-  $("reflection-text").addEventListener("input", () => { $("reflection-len").textContent = `${$("reflection-text").value.trim().length}자`; });
+  const keepAnswer = () => { if (qIdx < QN - 1 && qIdx !== CHOICE_Q) answers[qIdx] = $("debrief-a").value; };
+  $("btn-debrief-next").onclick = () => { if (qIdx === CHOICE_Q && !choiceDone()) return; keepAnswer(); qIdx = (qIdx + 1) % QN; renderQuestion(); saveDraft(); };
+  $("btn-debrief-prev").onclick = () => { if (qIdx === 0) return; keepAnswer(); qIdx -= 1; renderQuestion(); saveDraft(); };
+  $("debrief-a").addEventListener("input", () => { answers[qIdx] = $("debrief-a").value; saveDraft(); });
+  $("reflection-text").addEventListener("input", () => { $("reflection-len").textContent = `${$("reflection-text").value.trim().length}자`; saveDraft(); });
   $("btn-submit").onclick = async () => {
     const text = $("reflection-text").value.trim();
     if (text.length < 50) { $("reflection-error").textContent = `50자 이상 써 주세요. (지금 ${text.length}자)`; return; }
@@ -434,6 +468,7 @@
     try {
       await reflectionsRef().doc(S.code + "_" + S.pid + (gameNoOf(S.session) > 1 ? "_g" + gameNoOf(S.session) : "")).set(row);
       $("done-text").textContent = `${S.player.nickname}님의 소감이 제출되었습니다. (${row.character}, ${row.score}점)`;
+      clearDraft();
       showStep($("screen-student"), "s-step-done");
     } catch (e) { $("reflection-error").textContent = "저장에 실패했습니다. 다시 눌러 주세요."; }
     $("btn-submit").disabled = false;
